@@ -117,11 +117,11 @@ struct SplashScreenView: View {
     func scheduleDailyReminder() {
         let content = UNMutableNotificationContent()
         content.title = "DOPAMINE ⚡️"
-        content.body = "Bugün dopaminini almadın mı? Hedeflerini tamamlamak için harika bir vakit! 🌈"
+        content.body = "Günü bitirmeden son bir kontrol yapalım mı? Halkan ne durumda? 🌈"
         content.sound = .default
         
         var dateComponents = DateComponents()
-        dateComponents.hour = 20 // Her akşam 20:00
+        dateComponents.hour = 20 // 20:00
         
         let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
         let request = UNNotificationRequest(identifier: "dailyReminder", content: content, trigger: trigger)
