@@ -273,11 +273,11 @@ struct HabitRow: View {
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                     habit.isCompleted.toggle()
                     if habit.isCompleted {
-                        habit.completedAt = Date() // Şu anki zamanı kaydet
+                        habit.completedAt = Date()
+                        confettiTrigger += 1
                     } else {
-                        habit.completedAt = nil // İşareti kaldırırsan veriyi sil
+                        habit.completedAt = nil
                     }
-                    
                 }
             } label: {
                 Image(systemName: habit.isCompleted ? "checkmark.circle.fill" : "circle")
