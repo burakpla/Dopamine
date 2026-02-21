@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 @main
 struct DopamineApp: App {
@@ -13,5 +14,6 @@ struct DopamineApp: App {
         WindowGroup {
             ContentView()
         }
+        .modelContainer(for: Habit.self)
     }
 }
