@@ -4,9 +4,9 @@
 //
 //  Created by PortalGrup on 21.02.2026.
 //
-
 import SwiftUI
 import SwiftData
+import UserNotifications
 
 @main
 struct DopamineApp: App {
@@ -14,7 +14,7 @@ struct DopamineApp: App {
         WindowGroup {
             SplashScreenView()
         }
-        .modelContainer(for: Habit.self) // Veritabanını buraya bağladık
+        .modelContainer(for: Habit.self)
     }
 }
 
@@ -25,35 +25,34 @@ struct SplashScreenView: View {
     @State private var rotateLogo = 0.0
     @State private var pulseScale = 1.0
     
-    // Logondaki canlı renk paleti
     let colors: [Color] = [.orange, .pink, .purple, .cyan, .yellow, .red]
     
     var body: some View {
         if isActive {
-            ContentView()
+            ContentView() // Ana ekranına yönlendirir
         } else {
             ZStack {
                 Color.white.ignoresSafeArea()
                 
-                // 1. ARKA PLAN RENK PATLAMALARI (Daha belirgin ve canlı)
+                // 1. ARKA PLAN RENK PATLAMALARI
                 ForEach(0..<15) { i in
                     RoundedRectangle(cornerRadius: 6)
                         .fill(colors[i % colors.count])
                         .frame(width: CGFloat.random(in: 20...45), height: CGFloat.random(in: 20...45))
-                        .blur(radius: 10) // Blur azaldı, renkler netleşti
+                        .blur(radius: 10)
                         .offset(x: opacity == 1 ? CGFloat.random(in: -180...180) : 0,
                                 y: opacity == 1 ? CGFloat.random(in: -250...250) : 0)
-                        .opacity(opacity == 1 ? 0.6 : 0) // Opaklık arttı
+                        .opacity(opacity == 1 ? 0.6 : 0)
                 }
                 
                 VStack(spacing: 35) {
                     ZStack {
-                        // 2. LOGO ARKASI GÜÇLÜ PARLAMA (Aura)
+                        // 2. LOGO ARKASI AURA
                         Circle()
                             .fill(LinearGradient(colors: [.orange, .pink, .purple], startPoint: .topLeading, endPoint: .bottomTrailing))
                             .frame(width: 200, height: 200)
                             .blur(radius: 50)
-                            .scaleEffect(pulseScale) // Hafif nefes alma efekti
+                            .scaleEffect(pulseScale)
                             .opacity(0.4)
                         
                         Image("appLogo")
@@ -65,17 +64,13 @@ struct SplashScreenView: View {
                             .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
                     }
                     
-                    // 3. DAHA CANLI GRADIENT TEXT
+                    // 3. GRADIENT TEXT
                     VStack(spacing: 8) {
                         Text("DOPAMINE")
                             .font(.system(size: 32, weight: .black, design: .rounded))
                             .tracking(10)
                             .foregroundStyle(
-                                LinearGradient(
-                                    colors: [.orange, .pink, .purple],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
+                                LinearGradient(colors: [.orange, .pink, .purple], startPoint: .leading, endPoint: .trailing)
                             )
                         
                         Text("Harekete Geç")
@@ -88,25 +83,48 @@ struct SplashScreenView: View {
                 }
             }
             .onAppear {
-                // Giriş animasyonu
+                // Giriş animasyonları
                 withAnimation(.spring(response: 0.9, dampingFraction: 0.5)) {
                     self.scale = 1.0
                     self.opacity = 1.0
                     self.rotateLogo = 360
                 }
                 
-                // Arka plandaki auranın yavaşça "nefes alması"
                 withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
                     self.pulseScale = 1.2
                 }
                 
-                // Geçiş süresi
+                // 3 saniye sonra bildirim izni iste ve ana ekrana geç
                 DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                    requestNotificationPermission() // İzin isteği burada tetikleniyor
                     withAnimation(.easeInOut(duration: 0.6)) {
                         self.isActive = true
                     }
                 }
             }
         }
+    }
+    
+    // MARK: - Bildirim Fonksiyonları
+    func requestNotificationPermission() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { success, _ in
+            if success {
+                scheduleDailyReminder()
+            }
+        }
+    }
+    
+    func scheduleDailyReminder() {
+        let content = UNMutableNotificationContent()
+        content.title = "DOPAMINE ⚡️"
+        content.body = "Bugün dopaminini almadın mı? Hedeflerini tamamlamak için harika bir vakit! 🌈"
+        content.sound = .default
+        
+        var dateComponents = DateComponents()
+        dateComponents.hour = 20 // Her akşam 20:00
+        
+        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
+        let request = UNNotificationRequest(identifier: "dailyReminder", content: content, trigger: trigger)
+        UNUserNotificationCenter.current().add(request)
     }
 }

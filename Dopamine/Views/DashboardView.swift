@@ -275,6 +275,7 @@ struct HabitRow: View {
                     if habit.isCompleted {
                         habit.completedAt = Date()
                         confettiTrigger += 1
+                        NotificationManager.cancelTaskReminder(for: habit)
                     } else {
                         habit.completedAt = nil
                     }

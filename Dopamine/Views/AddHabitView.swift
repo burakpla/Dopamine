@@ -51,6 +51,7 @@ struct AddHabitView: View {
                     Button("Ekle") {
                         let newHabit = Habit(title: title, difficulty: difficulty)
                         modelContext.insert(newHabit) // SwiftData'ya kaydet
+                        NotificationManager.scheduleTaskReminder(for: newHabit)
                         dismiss()
                     }
                     .disabled(title.isEmpty)
