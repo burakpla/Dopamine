@@ -58,18 +58,15 @@ struct DashboardView: View {
         }.reversed()
     }
     
-    // MARK: - Functions
     func resetAllData() {
         for habit in habits {
             modelContext.delete(habit)
         }
         try? modelContext.save()
-        
         userName = ""
         dailyTarget = 500
     }
     
-    // MARK: - Body
     var body: some View {
         NavigationStack {
             ZStack {
@@ -77,7 +74,7 @@ struct DashboardView: View {
                 
                 ScrollView {
                     VStack(spacing: 20) {
-                        
+                        // MARK: - Motivasyon Kartı
                         VStack(alignment: .leading, spacing: 10) {
                             HStack {
                                 Image(systemName: "quote.opening").foregroundStyle(levelInfo.themeColor)
@@ -90,6 +87,7 @@ struct DashboardView: View {
                         .padding().frame(maxWidth: .infinity, alignment: .leading)
                         .background(.ultraThinMaterial).cornerRadius(20)
                         
+                        // MARK: - Ana Puan Kartı
                         VStack(spacing: 20) {
                             HStack(alignment: .top) {
                                 VStack(alignment: .leading, spacing: 4) {
@@ -105,29 +103,26 @@ struct DashboardView: View {
                                     tempTarget = Double(dailyTarget)
                                     isShowingTargetSheet = true
                                 } label: {
-                                    VStack(spacing: 6) {
-                                        ZStack {
-                                            ProgressCircle(progress: dailyProgress, color: isTargetAchieved ? .orange : levelInfo.themeColor)
-                                                .frame(width: 85, height: 85)
-                                            
-                                            VStack(spacing: -2) {
-                                                Text("\(dailyTarget)")
-                                                    .font(.system(size: 18, weight: .bold, design: .rounded))
-                                                    .foregroundStyle(isTargetAchieved ? .orange : .primary)
-                                                Text("HEDEF")
-                                                    .font(.system(size: 8, weight: .black))
-                                                    .foregroundStyle(.secondary)
-                                            }
-                                            
-                                            // Düzenle İkonu
-                                            Image(systemName: "pencil")
-                                                .font(.system(size: 10, weight: .bold))
-                                                .padding(4)
-                                                .background(.ultraThinMaterial)
-                                                .clipShape(Circle())
-                                                .offset(x: 32, y: -32)
+                                    ZStack {
+                                        ProgressCircle(progress: dailyProgress, color: isTargetAchieved ? .orange : levelInfo.themeColor)
+                                            .frame(width: 85, height: 85)
+                                        
+                                        VStack(spacing: -2) {
+                                            Text("\(dailyTarget)")
+                                                .font(.system(size: 18, weight: .bold, design: .rounded))
+                                                .foregroundStyle(isTargetAchieved ? .orange : .primary)
+                                            Text("HEDEF")
+                                                .font(.system(size: 8, weight: .black))
                                                 .foregroundStyle(.secondary)
                                         }
+                                        
+                                        Image(systemName: "pencil")
+                                            .font(.system(size: 10, weight: .bold))
+                                            .padding(4)
+                                            .background(.ultraThinMaterial)
+                                            .clipShape(Circle())
+                                            .offset(x: 32, y: -32)
+                                            .foregroundStyle(.secondary)
                                     }
                                 }
                                 .buttonStyle(ScalableButtonStyle())
@@ -154,8 +149,8 @@ struct DashboardView: View {
                             RoundedRectangle(cornerRadius: 32)
                                 .stroke(isTargetAchieved ? Color.orange.gradient : Color.clear.gradient, lineWidth: 3)
                         )
-                        .animation(.spring(), value: isTargetAchieved)
                         
+                        // MARK: - Grafik
                         VStack(alignment: .leading, spacing: 15) {
                             Text("Haftalık Performans").font(.headline)
                             Chart {
@@ -168,6 +163,7 @@ struct DashboardView: View {
                         }
                         .padding().background(.ultraThinMaterial).cornerRadius(24)
                         
+                        // MARK: - Hedef Listesi
                         VStack(alignment: .leading, spacing: 16) {
                             Text("Bugünkü Hedeflerin").font(.headline).padding(.leading, 4)
                             if habits.isEmpty {
@@ -203,19 +199,60 @@ struct DashboardView: View {
                 Button("Vazgeç", role: .cancel) { }
                 Button("Her Şeyi Sil", role: .destructive) { resetAllData() }
             } message: { Text("Tüm ilerlemen kalıcı olarak silinecek.") }
-                .sheet(isPresented: $isShowingTargetSheet) { targetSettingSheet }
-                .sheet(isPresented: $isShowingAddSheet) { AddHabitView().presentationDetents([.medium]) }
+            .sheet(isPresented: $isShowingTargetSheet) { targetSettingSheet }
+            .sheet(isPresented: $isShowingAddSheet) { AddHabitView().presentationDetents([.medium]) }
         }
     }
     
+    // MARK: - Yenilenen Hedef Belirleme Sheet'i
     private var targetSettingSheet: some View {
-        VStack(spacing: 25) {
-            Text("Günlük Hedefini Belirle").font(.headline)
-            Text("\(Int(tempTarget)) Puan").font(.system(size: 40, weight: .bold, design: .rounded)).foregroundStyle(levelInfo.themeColor)
-            Slider(value: $tempTarget, in: 100...2000, step: 50).tint(levelInfo.themeColor)
-            Button("Hedefi Güncelle") { dailyTarget = Int(tempTarget); isShowingTargetSheet = false }
-                .buttonStyle(.borderedProminent).tint(levelInfo.themeColor).controlSize(.large)
-        }.padding().presentationDetents([.height(250)])
+        VStack(spacing: 30) {
+            Capsule().fill(Color.secondary.opacity(0.2)).frame(width: 40, height: 5).padding(.top, 10)
+            
+            VStack(spacing: 15) {
+                Image(systemName: tempTarget > 1200 ? "bolt.shield.fill" : "target")
+                    .font(.system(size: 60))
+                    .foregroundStyle(levelInfo.themeColor.gradient)
+                    .symbolEffect(.bounce, value: tempTarget)
+                
+                Text("Günlük Hedefini Belirle").font(.title3.bold())
+                
+                Text("\(Int(tempTarget)) Puan")
+                    .font(.system(size: 48, weight: .black, design: .rounded))
+                    .foregroundStyle(levelInfo.themeColor.gradient)
+                    .contentTransition(.numericText())
+            }
+            
+            VStack(spacing: 12) {
+                HStack {
+                    Image(systemName: "tortoise.fill").foregroundStyle(.secondary)
+                    Spacer()
+                    Image(systemName: "figure.run").foregroundStyle(.secondary)
+                    Spacer()
+                    Image(systemName: "rocket.fill").foregroundStyle(.secondary)
+                }
+                .font(.caption).padding(.horizontal)
+                
+                Slider(value: $tempTarget, in: 100...2000, step: 50)
+                    .tint(levelInfo.themeColor)
+                    .sensoryFeedback(.selection, trigger: tempTarget)
+            }
+            .padding(.horizontal)
+            
+            Button {
+                dailyTarget = Int(tempTarget)
+                isShowingTargetSheet = false
+            } label: {
+                Text("HEDEFİ GÜNCELLE")
+                    .font(.headline).frame(maxWidth: .infinity).padding()
+                    .background(levelInfo.themeColor.gradient)
+                    .foregroundColor(.white).cornerRadius(15)
+                    .shadow(color: levelInfo.themeColor.opacity(0.3), radius: 10, y: 5)
+            }
+            .padding(.horizontal).padding(.bottom, 20)
+        }
+        .padding()
+        .presentationDetents([.height(450)])
     }
     
     private var levelProgressBar: some View {
