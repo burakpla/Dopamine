@@ -18,111 +18,169 @@ struct DopamineApp: App {
     }
 }
 
+// MARK: - Splash Screen
 struct SplashScreenView: View {
+    // State
     @State private var isActive = false
-    @State private var scale = 0.6
-    @State private var opacity = 0.0
-    @State private var rotateLogo = 0.0
-    @State private var pulseScale = 1.0
-    
-    let colors: [Color] = [.orange, .pink, .purple, .cyan, .yellow, .red]
-    
+    @State private var logoScale: CGFloat = 0.6
+    @State private var contentOpacity: Double = 0.0
+    @State private var logoRotation: Double = 0.0
+    @State private var pulseScale: CGFloat = 1.0
+    @State private var blobs: [Blob] = []
+
+    // Constants
+    private enum Metrics {
+        static let splashDuration: TimeInterval = 3.0
+        static let logoSize: CGFloat = 160
+        static let glowCircleSize: CGFloat = 200
+        static let glowBlur: CGFloat = 50
+        static let titleTracking: CGFloat = 10
+        static let subtitleTracking: CGFloat = 3
+        static let blobCount: Int = 15
+        static let blobCornerRadius: CGFloat = 6
+        static let blobMinSize: CGFloat = 20
+        static let blobMaxSize: CGFloat = 45
+        static let blobBlur: CGFloat = 10
+        static let blobOpacity: Double = 0.6
+        static let blobXRange: ClosedRange<CGFloat> = -180...180
+        static let blobYRange: ClosedRange<CGFloat> = -250...250
+        static let appearSpringResponse: Double = 0.9
+        static let appearSpringDamping: Double = 0.5
+        static let pulseDuration: Double = 1.5
+        static let pulseMaxScale: CGFloat = 1.2
+        static let transitionDuration: Double = 0.6
+        static let titleFontSize: CGFloat = 32
+    }
+
+    private let gradientColors: [Color] = [.orange, .pink, .purple]
+    private let accentColors: [Color] = [.orange, .pink, .purple, .cyan, .yellow, .red]
+
     var body: some View {
-        if isActive {
-            ContentView() // Ana ekranına yönlendirir
-        } else {
-            ZStack {
-                Color.white.ignoresSafeArea()
-                
-                // 1. ARKA PLAN RENK PATLAMALARI
-                ForEach(0..<15) { i in
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(colors[i % colors.count])
-                        .frame(width: CGFloat.random(in: 20...45), height: CGFloat.random(in: 20...45))
-                        .blur(radius: 10)
-                        .offset(x: opacity == 1 ? CGFloat.random(in: -180...180) : 0,
-                                y: opacity == 1 ? CGFloat.random(in: -250...250) : 0)
-                        .opacity(opacity == 1 ? 0.6 : 0)
-                }
-                
-                VStack(spacing: 35) {
-                    ZStack {
-                        // 2. LOGO ARKASI AURA
-                        Circle()
-                            .fill(LinearGradient(colors: [.orange, .pink, .purple], startPoint: .topLeading, endPoint: .bottomTrailing))
-                            .frame(width: 200, height: 200)
-                            .blur(radius: 50)
-                            .scaleEffect(pulseScale)
-                            .opacity(0.4)
-                        
-                        Image("appLogo")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 160, height: 160)
-                            .scaleEffect(scale)
-                            .rotationEffect(.degrees(rotateLogo))
-                            .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
+        Group {
+            if isActive {
+                ContentView()
+            } else {
+                ZStack {
+                    Color.white.ignoresSafeArea()
+                    // Background blobs
+                    ForEach(blobs) { blob in
+                        RoundedRectangle(cornerRadius: Metrics.blobCornerRadius)
+                            .fill(blob.color)
+                            .frame(width: blob.size.width, height: blob.size.height)
+                            .blur(radius: Metrics.blobBlur)
+                            .offset(x: contentOpacity == 1 ? blob.offset.x : 0,
+                                    y: contentOpacity == 1 ? blob.offset.y : 0)
+                            .opacity(contentOpacity == 1 ? Metrics.blobOpacity : 0)
                     }
-                    
-                    // 3. GRADIENT TEXT
-                    VStack(spacing: 8) {
-                        Text("DOPAMINE")
-                            .font(.system(size: 32, weight: .black, design: .rounded))
-                            .tracking(10)
-                            .foregroundStyle(
-                                LinearGradient(colors: [.orange, .pink, .purple], startPoint: .leading, endPoint: .trailing)
-                            )
-                        
-                        Text("Harekete Geç")
-                            .font(.caption.bold())
-                            .foregroundStyle(.secondary)
-                            .tracking(3)
-                    }
-                    .opacity(opacity)
-                    .offset(y: opacity == 1 ? 0 : 30)
-                }
-            }
-            .onAppear {
-                // Giriş animasyonları
-                withAnimation(.spring(response: 0.9, dampingFraction: 0.5)) {
-                    self.scale = 1.0
-                    self.opacity = 1.0
-                    self.rotateLogo = 360
-                }
-                
-                withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
-                    self.pulseScale = 1.2
-                }
-                
-                // 3 saniye sonra bildirim izni iste ve ana ekrana geç
-                DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-                    requestNotificationPermission() // İzin isteği burada tetikleniyor
-                    withAnimation(.easeInOut(duration: 0.6)) {
-                        self.isActive = true
+
+                    VStack(spacing: 35) {
+                        // Logo + glow
+                        ZStack {
+                            Circle()
+                                .fill(LinearGradient(colors: gradientColors, startPoint: .topLeading, endPoint: .bottomTrailing))
+                                .frame(width: Metrics.glowCircleSize, height: Metrics.glowCircleSize)
+                                .blur(radius: Metrics.glowBlur)
+                                .scaleEffect(pulseScale)
+                                .opacity(0.4)
+
+                            Image("appLogo")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: Metrics.logoSize, height: Metrics.logoSize)
+                                .scaleEffect(logoScale)
+                                .rotationEffect(.degrees(logoRotation))
+                                .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
+                                .accessibilityLabel("Dopamine Logo")
+                        }
+
+                        // Titles
+                        VStack(spacing: 8) {
+                            Text("DOPAMINE")
+                                .font(.system(size: Metrics.titleFontSize, weight: .black, design: .rounded))
+                                .tracking(Metrics.titleTracking)
+                                .foregroundStyle(
+                                    LinearGradient(colors: gradientColors, startPoint: .leading, endPoint: .trailing)
+                                )
+
+                            Text("Harekete Geç")
+                                .font(.caption.bold())
+                                .foregroundStyle(.secondary)
+                                .tracking(Metrics.subtitleTracking)
+                        }
+                        .opacity(contentOpacity)
+                        .offset(y: contentOpacity == 1 ? 0 : 30)
                     }
                 }
+                .onAppear(perform: onAppear)
             }
         }
     }
-    
-    // MARK: - Bildirim Fonksiyonları
-    func requestNotificationPermission() {
+}
+
+// MARK: - Lifecycle & Helpers
+private extension SplashScreenView {
+    func onAppear() {
+        // Precompute blobs once to avoid random layout changes on body recomputation
+        if blobs.isEmpty {
+            blobs = (0..<Metrics.blobCount).map { index in
+                Blob(
+                    id: index,
+                    color: accentColors[index % accentColors.count],
+                    size: .init(width: .random(in: Metrics.blobMinSize...Metrics.blobMaxSize),
+                                height: .random(in: Metrics.blobMinSize...Metrics.blobMaxSize)),
+                    offset: .init(
+                        x: .random(in: Metrics.blobXRange),
+                        y: .random(in: Metrics.blobYRange)
+                    )
+                )
+            }
+        }
+
+        withAnimation(.spring(response: Metrics.appearSpringResponse, dampingFraction: Metrics.appearSpringDamping)) {
+            logoScale = 1.0
+            contentOpacity = 1.0
+            logoRotation = 360
+        }
+
+        withAnimation(.easeInOut(duration: Metrics.pulseDuration).repeatForever(autoreverses: true)) {
+            pulseScale = Metrics.pulseMaxScale
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + Metrics.splashDuration) {
+            NotificationHelper.requestNotificationPermissionAndScheduleDaily()
+            withAnimation(.easeInOut(duration: Metrics.transitionDuration)) {
+                isActive = true
+            }
+        }
+    }
+}
+
+// MARK: - Models
+private struct Blob: Identifiable {
+    let id: Int
+    let color: Color
+    let size: CGSize
+    let offset: CGPoint
+}
+
+// MARK: - Notifications
+private enum NotificationHelper {
+    static func requestNotificationPermissionAndScheduleDaily() {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { success, _ in
-            if success {
-                scheduleDailyReminder()
-            }
+            guard success else { return }
+            scheduleDailyReminder()
         }
     }
-    
-    func scheduleDailyReminder() {
+
+    private static func scheduleDailyReminder() {
         let content = UNMutableNotificationContent()
         content.title = "DOPAMINE ⚡️"
         content.body = "Günü bitirmeden son bir kontrol yapalım mı? Halkan ne durumda? 🌈"
         content.sound = .default
-        
+
         var dateComponents = DateComponents()
         dateComponents.hour = 20 // 20:00
-        
+
         let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
         let request = UNNotificationRequest(identifier: "dailyReminder", content: content, trigger: trigger)
         UNUserNotificationCenter.current().add(request)

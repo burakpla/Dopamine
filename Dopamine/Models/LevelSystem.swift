@@ -11,12 +11,10 @@ import SwiftUI
 struct LevelSystem {
     let totalPoints: Int
     
-    // Seviye hesaplama (Örn: Her 200 puan bir seviye)
     var level: Int {
         return (totalPoints / 200) + 1
     }
     
-    // Ünvan belirleme
     var rank: String {
         switch level {
         case 1: return "Çaylak"
@@ -27,7 +25,6 @@ struct LevelSystem {
         }
     }
     
-    // Seviyeye özel renk (Temayı değiştireceğiz!)
     var themeColor: Color {
         switch level {
         case 1: return .blue

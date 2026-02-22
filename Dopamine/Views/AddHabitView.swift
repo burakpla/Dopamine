@@ -38,7 +38,7 @@ struct AddHabitView: View {
                         Text("Orta (15p)").tag(2)
                         Text("Zor (40p)").tag(3)
                     }
-                    .pickerStyle(.segmented) // Apple tarzı yan yana butonlar
+                    .pickerStyle(.segmented)
                 }
             }
             .navigationTitle("Yeni Hedef")
@@ -50,7 +50,7 @@ struct AddHabitView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Ekle") {
                         let newHabit = Habit(title: title, difficulty: difficulty)
-                        modelContext.insert(newHabit) // SwiftData'ya kaydet
+                        modelContext.insert(newHabit)
                         NotificationManager.scheduleTaskReminder(for: newHabit)
                         dismiss()
                     }

@@ -5,75 +5,112 @@
 //  Created by PortalGrup on 21.02.2026.
 //
 
-
 import SwiftUI
 
 struct OnboardingView: View {
-    @AppStorage("userName") var userName: String = ""
-    @AppStorage("hasSeenOnboarding") var hasSeenOnboarding: Bool = false
+    // Persisted values
+    @AppStorage("userName") private var userName: String = ""
+    @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding: Bool = false
+
+    // UI State
     @State private var nameInput: String = ""
-    
+    @FocusState private var nameFieldFocused: Bool
+
+    // Constants
+    private enum Metrics {
+        static let iconSize: CGFloat = 100
+        static let titleFontSize: CGFloat = 32
+        static let fieldCornerRadius: CGFloat = 15
+        static let fieldHorizontalPadding: CGFloat = 40
+        static let buttonHeight: CGFloat = 60
+        static let buttonCornerRadius: CGFloat = 20
+        static let outerSpacing: CGFloat = 40
+        static let bottomPadding: CGFloat = 30
+        static let shadowRadius: CGFloat = 10
+    }
+
+    private var isNameValid: Bool {
+        !nameInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private var buttonBackground: Color {
+        isNameValid ? .blue : .gray
+    }
+
     var body: some View {
         ZStack {
             LinearGradient(colors: [.blue.opacity(0.3), .purple.opacity(0.2), .clear],
-                           startPoint: .topLeading, 
+                           startPoint: .topLeading,
                            endPoint: .bottomTrailing)
-                .ignoresSafeArea()
-            
-            VStack(spacing: 40) {
+            .ignoresSafeArea()
+
+            VStack(spacing: Metrics.outerSpacing) {
                 Spacer()
-                
+
                 Image(systemName: "bolt.ring.closed")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(width: 100, height: 100)
+                    .frame(width: Metrics.iconSize, height: Metrics.iconSize)
                     .foregroundStyle(.linearGradient(colors: [.blue, .purple], startPoint: .top, endPoint: .bottom))
                     .shadow(color: .purple.opacity(0.3), radius: 20, x: 0, y: 10)
-                
+                    .accessibilityHidden(true)
+
                 VStack(spacing: 12) {
                     Text("Dopamine'e Hoş Geldin")
-                        .font(.system(size: 32, weight: .bold, design: .rounded))
-                    
+                        .font(.system(size: Metrics.titleFontSize, weight: .bold, design: .rounded))
+
                     Text("Sana nasıl hitap etmemizi istersin?")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
-                
+                .multilineTextAlignment(.center)
+
                 TextField("Adın...", text: $nameInput)
                     .font(.title3)
                     .padding()
                     .background(.ultraThinMaterial)
-                    .cornerRadius(15)
+                    .cornerRadius(Metrics.fieldCornerRadius)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 15)
+                        RoundedRectangle(cornerRadius: Metrics.fieldCornerRadius)
                             .stroke(Color.primary.opacity(0.1), lineWidth: 1)
                     )
-                    .padding(.horizontal, 40)
+                    .padding(.horizontal, Metrics.fieldHorizontalPadding)
                     .multilineTextAlignment(.center)
-                
+                    .textInputAutocapitalization(.words)
+                    .submitLabel(.done)
+                    .focused($nameFieldFocused)
+                    .onSubmit(saveAndProceed)
+                    .accessibilityLabel("Adın")
+
                 Spacer()
-                
-                Button {
-                    if !nameInput.isEmpty {
-                        withAnimation(.spring()) {
-                            userName = nameInput
-                            hasSeenOnboarding = true
-                        }
-                    }
-                } label: {
+
+                Button(action: saveAndProceed) {
                     Text("Başlayalım")
                         .font(.headline)
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 60)
-                        .background(nameInput.isEmpty ? Color.gray : Color.blue)
-                        .cornerRadius(20)
-                        .shadow(color: .blue.opacity(0.3), radius: 10, y: 5)
+                        .frame(height: Metrics.buttonHeight)
+                        .background(buttonBackground)
+                        .cornerRadius(Metrics.buttonCornerRadius)
+                        .shadow(color: .blue.opacity(0.3), radius: Metrics.shadowRadius, y: 5)
                 }
-                .padding(.horizontal, 40)
-                .padding(.bottom, 30)
-                .disabled(nameInput.isEmpty)
+                .padding(.horizontal, Metrics.fieldHorizontalPadding)
+                .padding(.bottom, Metrics.bottomPadding)
+                .disabled(!isNameValid)
             }
+        }
+        .onAppear { nameFieldFocused = true }
+    }
+}
+// MARK: - Actions
+private extension OnboardingView {
+    func saveAndProceed() {
+        let trimmed = nameInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        withAnimation(.spring()) {
+            userName = trimmed
+            hasSeenOnboarding = true
         }
     }
 }
+

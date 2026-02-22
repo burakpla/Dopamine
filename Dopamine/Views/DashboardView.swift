@@ -11,7 +11,6 @@ import SwiftData
 import Charts
 
 struct DashboardView: View {
-    // MARK: - Properties
     @AppStorage("userName") var userName: String = ""
     @AppStorage("dailyTarget") var dailyTarget: Int = 500
     @Environment(\.modelContext) private var modelContext
@@ -23,7 +22,6 @@ struct DashboardView: View {
     @State private var confettiTrigger = 0
     @State private var tempTarget: Double = 500
     
-    // MARK: - Computed Properties
     var totalPoints: Int {
         habits.filter { $0.isCompleted }.reduce(0) { $0 + $1.points }
     }
@@ -59,20 +57,18 @@ struct DashboardView: View {
             return DailyProgress(date: targetDate, points: dayPoints)
         }.reversed()
     }
-
+    
     // MARK: - Functions
     func resetAllData() {
-        // Tüm veritabanını temizle
         for habit in habits {
             modelContext.delete(habit)
         }
         try? modelContext.save()
         
-        // Tercihleri sıfırla (İsim silinince Onboarding açılır)
         userName = ""
         dailyTarget = 500
     }
-
+    
     // MARK: - Body
     var body: some View {
         NavigationStack {
@@ -82,7 +78,6 @@ struct DashboardView: View {
                 ScrollView {
                     VStack(spacing: 20) {
                         
-                        // 1. MOTİVASYON KARTI
                         VStack(alignment: .leading, spacing: 10) {
                             HStack {
                                 Image(systemName: "quote.opening").foregroundStyle(levelInfo.themeColor)
@@ -95,7 +90,6 @@ struct DashboardView: View {
                         .padding().frame(maxWidth: .infinity, alignment: .leading)
                         .background(.ultraThinMaterial).cornerRadius(20)
                         
-                        // 2. ANA KART (PARLAMA VE HEDEF HALKASI)
                         VStack(spacing: 20) {
                             HStack(alignment: .top) {
                                 VStack(alignment: .leading, spacing: 4) {
@@ -107,7 +101,6 @@ struct DashboardView: View {
                                 }
                                 Spacer()
                                 
-                                // HEDEF HALKASI (Ortasında hedef puanı yazar)
                                 Button {
                                     tempTarget = Double(dailyTarget)
                                     isShowingTargetSheet = true
@@ -162,21 +155,19 @@ struct DashboardView: View {
                                 .stroke(isTargetAchieved ? Color.orange.gradient : Color.clear.gradient, lineWidth: 3)
                         )
                         .animation(.spring(), value: isTargetAchieved)
-
-                        // 3. GRAFİK KARTI
+                        
                         VStack(alignment: .leading, spacing: 15) {
                             Text("Haftalık Performans").font(.headline)
                             Chart {
                                 ForEach(weeklyData) { data in
                                     BarMark(x: .value("Gün", data.date, unit: .day), y: .value("Puan", data.points))
-                                    .foregroundStyle(levelInfo.themeColor.gradient).cornerRadius(4)
+                                        .foregroundStyle(levelInfo.themeColor.gradient).cornerRadius(4)
                                 }
                             }
                             .frame(height: 120)
                         }
                         .padding().background(.ultraThinMaterial).cornerRadius(24)
                         
-                        // 4. GÖREV LİSTESİ
                         VStack(alignment: .leading, spacing: 16) {
                             Text("Bugünkü Hedeflerin").font(.headline).padding(.leading, 4)
                             if habits.isEmpty {
@@ -212,19 +203,18 @@ struct DashboardView: View {
                 Button("Vazgeç", role: .cancel) { }
                 Button("Her Şeyi Sil", role: .destructive) { resetAllData() }
             } message: { Text("Tüm ilerlemen kalıcı olarak silinecek.") }
-            .sheet(isPresented: $isShowingTargetSheet) { targetSettingSheet }
-            .sheet(isPresented: $isShowingAddSheet) { AddHabitView().presentationDetents([.medium]) }
+                .sheet(isPresented: $isShowingTargetSheet) { targetSettingSheet }
+                .sheet(isPresented: $isShowingAddSheet) { AddHabitView().presentationDetents([.medium]) }
         }
     }
     
-    // MARK: - Subviews
     private var targetSettingSheet: some View {
         VStack(spacing: 25) {
             Text("Günlük Hedefini Belirle").font(.headline)
             Text("\(Int(tempTarget)) Puan").font(.system(size: 40, weight: .bold, design: .rounded)).foregroundStyle(levelInfo.themeColor)
             Slider(value: $tempTarget, in: 100...2000, step: 50).tint(levelInfo.themeColor)
             Button("Hedefi Güncelle") { dailyTarget = Int(tempTarget); isShowingTargetSheet = false }
-            .buttonStyle(.borderedProminent).tint(levelInfo.themeColor).controlSize(.large)
+                .buttonStyle(.borderedProminent).tint(levelInfo.themeColor).controlSize(.large)
         }.padding().presentationDetents([.height(250)])
     }
     
@@ -250,7 +240,6 @@ struct DashboardView: View {
     }
 }
 
-// MARK: - Destekleyici Tasarım
 struct ScalableButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -259,7 +248,6 @@ struct ScalableButtonStyle: ButtonStyle {
     }
 }
 
-// MARK: - Destekleyici Modeller ve Görünümler
 
 struct HabitRow: View {
     let habit: Habit
