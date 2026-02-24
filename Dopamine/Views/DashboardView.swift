@@ -292,15 +292,37 @@ struct HabitRow: View {
     @Binding var confettiTrigger: Int
     var themeColor: Color
     
+    // Kopyalama fonksiyonu
+    private func duplicate() {
+        // Yeni bir habit oluştururken her zaman tertemiz (fresh) başlıyoruz
+        let newHabit = Habit(
+            title: habit.title, // İstersen sonuna (Kopya) eklemezsin, daha temiz durur
+            difficulty: habit.difficulty
+        )
+        
+        // Önemli: Kopyalanan görev bitmiş olsa bile yeni görev bitmemiş başlar
+        newHabit.isCompleted = false
+        newHabit.completedAt = nil
+        newHabit.createdAt = Date() // Listenin en üstüne çıkması için
+        
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
+            modelContext.insert(newHabit)
+            try? modelContext.save()
+        }
+        
+        // Hafif bir "başarılı" titreşimi
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+    }
+    
     var body: some View {
         HStack(spacing: 16) {
+            // MARK: - Tamamla Butonu
             Button {
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                     habit.isCompleted.toggle()
                     if habit.isCompleted {
                         habit.completedAt = Date()
                         confettiTrigger += 1
-                        NotificationManager.cancelTaskReminder(for: habit)
                     } else {
                         habit.completedAt = nil
                     }
@@ -309,12 +331,9 @@ struct HabitRow: View {
                 Image(systemName: habit.isCompleted ? "checkmark.circle.fill" : "circle")
                     .font(.title)
                     .foregroundStyle(habit.isCompleted ? .green : themeColor)
-                    .symbolEffect(.bounce, value: habit.isCompleted)
-            }
-            .sensoryFeedback(.success, trigger: habit.isCompleted) { _, newValue in
-                return newValue == true
             }
             
+            // MARK: - Metin Alanı
             VStack(alignment: .leading, spacing: 4) {
                 Text(habit.title)
                     .font(.body.bold())
@@ -327,14 +346,26 @@ struct HabitRow: View {
                     .background(themeColor.opacity(0.1))
                     .foregroundStyle(themeColor).cornerRadius(5)
             }
+            
             Spacer()
+            
+            // MARK: - Kopyalama Butonu (Her Zaman Görünür)
+            Button {
+                duplicate()
+            } label: {
+                VStack(spacing: 3) {
+                    Image(systemName: "plus.square.fill.on.square.fill")
+                        .font(.system(size: 20))
+                    Text("TEKRARLA")
+                        .font(.system(size: 8, weight: .black))
+                }
+                .foregroundStyle(themeColor.opacity(0.7))
+            }
+            .buttonStyle(ScalableButtonStyle()) // Senin o basılma efektini buraya da verdik
         }
         .padding()
         .background(Color.primary.opacity(0.03))
         .cornerRadius(20)
-        .swipeActions {
-            Button(role: .destructive) { modelContext.delete(habit) } label: { Label("Sil", systemImage: "trash") }
-        }
     }
 }
 

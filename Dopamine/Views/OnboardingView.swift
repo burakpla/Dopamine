@@ -57,19 +57,68 @@ struct OnboardingView: View {
             .ignoresSafeArea()
             .overlay(
                 ZStack {
-                    // Animated radial glow
+                    // Multiple animated radial glows across the screen
                     RadialGradient(
                         colors: [
-                            Color.white.opacity(0.22 + 0.08 * Double(bgPulse)),
+                            Color.white.opacity(0.18 + 0.06 * Double(bgPulse)),
                             Color.clear
                         ],
-                        center: .top,
+                        center: .topLeading,
+                        startRadius: 8 + 6 * bgPulse,
+                        endRadius: 420 + 40 * bgPulse
+                    )
+                    .offset(x: -40 + bgPulse * 10, y: -20 + bgPulse * 6)
+                    .blendMode(.screen)
+
+                    RadialGradient(
+                        colors: [
+                            Color.white.opacity(0.14 + 0.05 * Double(bgPulse)),
+                            Color.clear
+                        ],
+                        center: .topTrailing,
+                        startRadius: 12 + 8 * bgPulse,
+                        endRadius: 380 + 35 * bgPulse
+                    )
+                    .offset(x: 30 - bgPulse * 8, y: -10 - bgPulse * 5)
+                    .blendMode(.screen)
+
+                    RadialGradient(
+                        colors: [
+                            Color.white.opacity(0.12 + 0.06 * Double(bgPulse)),
+                            Color.clear
+                        ],
+                        center: .bottomLeading,
                         startRadius: 10 + 6 * bgPulse,
-                        endRadius: 420 + 30 * bgPulse
+                        endRadius: 400 + 35 * bgPulse
+                    )
+                    .offset(x: -20 + bgPulse * 6, y: 30 - bgPulse * 8)
+                    .blendMode(.screen)
+
+                    RadialGradient(
+                        colors: [
+                            Color.white.opacity(0.16 + 0.06 * Double(bgPulse)),
+                            Color.clear
+                        ],
+                        center: .bottomTrailing,
+                        startRadius: 10 + 6 * bgPulse,
+                        endRadius: 420 + 35 * bgPulse
+                    )
+                    .offset(x: 20 - bgPulse * 6, y: 40 + bgPulse * 6)
+                    .blendMode(.screen)
+
+                    // Central soft glow
+                    RadialGradient(
+                        colors: [
+                            Color.white.opacity(0.10 + 0.05 * Double(bgPulse)),
+                            Color.clear
+                        ],
+                        center: .center,
+                        startRadius: 6 + 4 * bgPulse,
+                        endRadius: 380 + 30 * bgPulse
                     )
                     .blendMode(.screen)
 
-                    // Subtle moving linear tint
+                    // Subtle moving linear tint on top
                     LinearGradient(
                         colors: [
                             Color.purple.opacity(0.10 + 0.05 * Double(bgPulse)),
@@ -78,9 +127,26 @@ struct OnboardingView: View {
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
-                    .opacity(0.7)
-                    .offset(x: bgPulse * 8, y: bgPulse * -6)
+                    .opacity(0.75)
+                    .offset(x: bgPulse * 10, y: bgPulse * -8)
                     .blendMode(.plusLighter)
+                    
+                    // Full-screen sweeping gradient pass
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.0),
+                            Color.white.opacity(0.18),
+                            Color.white.opacity(0.0)
+                        ],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                    .scaleEffect(3.0) // make it large enough to sweep across
+                    .rotationEffect(.degrees(25))
+                    .offset(x: -300 + bgPulse * 600, y: 0)
+                    .blendMode(.screen)
+                    .opacity(0.35)
+                    .allowsHitTesting(false)
                 }
                 .ignoresSafeArea()
             )
