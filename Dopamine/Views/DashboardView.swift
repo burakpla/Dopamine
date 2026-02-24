@@ -294,28 +294,25 @@ struct HabitRow: View {
     
     // Kopyalama fonksiyonu
     private func duplicate() {
-        // Yeni bir habit oluştururken her zaman tertemiz (fresh) başlıyoruz
-        let newHabit = Habit(
-            title: habit.title, // İstersen sonuna (Kopya) eklemezsin, daha temiz durur
-            difficulty: habit.difficulty
-        )
-        
-        // Önemli: Kopyalanan görev bitmiş olsa bile yeni görev bitmemiş başlar
+        let newHabit = Habit(title: habit.title, difficulty: habit.difficulty)
         newHabit.isCompleted = false
-        newHabit.completedAt = nil
-        newHabit.createdAt = Date() // Listenin en üstüne çıkması için
-        
-        withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
+        newHabit.createdAt = Date()
+        withAnimation(.spring()) {
             modelContext.insert(newHabit)
-            try? modelContext.save()
         }
-        
-        // Hafif bir "başarılı" titreşimi
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+    }
+    
+    // Silme fonksiyonu
+    private func deleteHabit() {
+        withAnimation(.spring()) {
+            modelContext.delete(habit)
+        }
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
     }
     
     var body: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 12) {
             // MARK: - Tamamla Butonu
             Button {
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
@@ -329,14 +326,14 @@ struct HabitRow: View {
                 }
             } label: {
                 Image(systemName: habit.isCompleted ? "checkmark.circle.fill" : "circle")
-                    .font(.title)
+                    .font(.title2)
                     .foregroundStyle(habit.isCompleted ? .green : themeColor)
             }
             
             // MARK: - Metin Alanı
             VStack(alignment: .leading, spacing: 4) {
                 Text(habit.title)
-                    .font(.body.bold())
+                    .font(.system(.body, design: .rounded, weight: .bold))
                     .strikethrough(habit.isCompleted)
                     .foregroundStyle(habit.isCompleted ? .secondary : .primary)
                 
@@ -349,22 +346,27 @@ struct HabitRow: View {
             
             Spacer()
             
-            // MARK: - Kopyalama Butonu (Her Zaman Görünür)
-            Button {
-                duplicate()
-            } label: {
-                VStack(spacing: 3) {
-                    Image(systemName: "plus.square.fill.on.square.fill")
-                        .font(.system(size: 20))
-                    Text("TEKRARLA")
-                        .font(.system(size: 8, weight: .black))
+            // MARK: - Aksiyon Butonları (Kopyala ve Sil)
+            HStack(spacing: 15) {
+                // Kopyala Butonu
+                Button(action: duplicate) {
+                    Image(systemName: "plus.square.on.square")
+                        .font(.system(size: 18))
+                        .foregroundStyle(themeColor.opacity(0.7))
                 }
-                .foregroundStyle(themeColor.opacity(0.7))
+                .buttonStyle(ScalableButtonStyle())
+                
+                // Silme Butonu
+                Button(action: deleteHabit) {
+                    Image(systemName: "trash")
+                        .font(.system(size: 18))
+                        .foregroundStyle(.red.opacity(0.7))
+                }
+                .buttonStyle(ScalableButtonStyle())
             }
-            .buttonStyle(ScalableButtonStyle()) // Senin o basılma efektini buraya da verdik
         }
         .padding()
-        .background(Color.primary.opacity(0.03))
+        .background(Color.primary.opacity(0.04))
         .cornerRadius(20)
     }
 }
