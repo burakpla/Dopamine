@@ -22,7 +22,7 @@ struct AddHabitView: View {
     private var currentDifficultyColor: Color {
         difficulty == 1 ? .green : (difficulty == 2 ? .orange : .red)
     }
-
+    
     var body: some View {
         NavigationStack {
             ZStack {
@@ -126,11 +126,11 @@ extension AddHabitView {
                 .bold()
                 .frame(maxWidth: .infinity)
                 .padding()
-                // .gradient kullanarak tipi AnyGradient olarak eşitliyoruz
+            // .gradient kullanarak tipi AnyGradient olarak eşitliyoruz
                 .background(
                     title.isEmpty ?
                     Color.gray.opacity(0.3).gradient :
-                    currentDifficultyColor.gradient
+                        currentDifficultyColor.gradient
                 )
                 .foregroundStyle(title.isEmpty ? .white.opacity(0.3) : .white)
                 .cornerRadius(18)

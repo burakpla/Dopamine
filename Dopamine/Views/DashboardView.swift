@@ -69,7 +69,6 @@ struct DashboardView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                // 1. Arka Plan Katmanı (Onboarding ile aynı)
                 backgroundLayer
                 
                 ScrollView(showsIndicators: false) {
@@ -79,8 +78,6 @@ struct DashboardView: View {
                         performanceChart
                         todayHabitsList
                     }
-                    // .padding(.horizontal, 20) burada işe yaramıyorsa
-                    // maxWidth'i ekran genişliğinden biraz az vererek zorlayalım:
                     .frame(width: UIScreen.main.bounds.width - 40)
                     .padding(.vertical, 10)
                 }
@@ -357,7 +354,7 @@ extension DashboardView {
             }
         }
     }
-
+    
     // Hedef Ayarlama Sayfası
     private var targetSettingSheet: some View {
         ZStack {
@@ -392,7 +389,7 @@ extension DashboardView {
         }
         .presentationDetents([.height(380)])
     }
-
+    
     private func resetAllData() {
         for habit in habits { modelContext.delete(habit) }
         try? modelContext.save()
@@ -401,261 +398,17 @@ extension DashboardView {
     }
 }
 
-// MARK: - HabitRow (Modernize Edilmiş)
-struct HabitRow: View {
-    let habit: Habit
-    @Environment(\.modelContext) private var modelContext
-    @Binding var confettiTrigger: Int
-    var themeColor: Color
-    
-    private func duplicate() {
-        let newHabit = Habit(title: habit.title, difficulty: habit.difficulty)
-        newHabit.isCompleted = false
-        newHabit.createdAt = Date()
-        withAnimation(.spring()) { modelContext.insert(newHabit) }
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-    }
-    
-    private func deleteHabit() {
-        withAnimation(.spring()) { modelContext.delete(habit) }
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-    }
-    
-    var body: some View {
-        HStack(spacing: 15) {
-            Button {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                    habit.isCompleted.toggle()
-                    if habit.isCompleted {
-                        habit.completedAt = Date()
-                        confettiTrigger += 1
-                        UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
-                    } else {
-                        habit.completedAt = nil
-                    }
-                }
-            } label: {
-                Image(systemName: habit.isCompleted ? "checkmark.circle.fill" : "circle")
-                    .font(.title2)
-                    .foregroundStyle(habit.isCompleted ? .green : themeColor)
-            }
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text(habit.title)
-                    .font(.system(.body, design: .rounded, weight: .bold))
-                    .strikethrough(habit.isCompleted)
-                    .foregroundStyle(habit.isCompleted ? .white.opacity(0.4) : .white)
-                
-                Text("+\(habit.points) Puan")
-                    .font(.system(size: 10, weight: .black))
-                    .padding(.horizontal, 8).padding(.vertical, 2)
-                    .background(themeColor.opacity(0.2))
-                    .foregroundStyle(themeColor)
-                    .cornerRadius(6)
-            }
-            
-            Spacer()
-            
-            HStack(spacing: 18) {
-                Button(action: duplicate) {
-                    Image(systemName: "plus.square.on.square").foregroundStyle(.white.opacity(0.4))
-                }
-                Button(action: deleteHabit) {
-                    Image(systemName: "trash").foregroundStyle(.red.opacity(0.6))
-                }
-            }
-        }
-        .padding()
-        .background(Color.white.opacity(0.05))
-        .cornerRadius(20)
-        .overlay(RoundedRectangle(cornerRadius: 20).stroke(.white.opacity(0.05), lineWidth: 1))
-    }
-}
-
-// MARK: - Helper Views (VisualEffect, Color Extension)
-// MARK: - Helper Views
-struct VisualEffectView: UIViewRepresentable {
-    var effect: UIVisualEffect? // UIEffect yerine UIVisualEffect yazınca SwiftUI bazen daha rahat tanıyor
-    func makeUIView(context: Context) -> UIVisualEffectView {
-        UIVisualEffectView()
-    }
-    func updateUIView(_ uiView: UIVisualEffectView, context: Context) {
-        uiView.effect = effect
-    }
-}
-
-extension Color {
-    init(hex: String) {
-        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
-        var int: UInt64 = 0
-        Scanner(string: hex).scanHexInt64(&int)
-        let a, r, g, b: UInt64
-        switch hex.count {
-        case 3: (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
-        case 6: (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
-        case 8: (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
-        default: (a, r, g, b) = (1, 1, 1, 0)
-        }
-        self.init(.sRGB, red: Double(r) / 255, green: Double(g) / 255, blue: Double(b) / 255, opacity: Double(a) / 255)
-    }
-}
-
-// MARK: - Confetti Animation View
-struct ConfettiView: View {
-    @State private var animate = false
-    @State private var xOffsets: [CGFloat] = (0..<25).map { _ in CGFloat.random(in: -150...150) }
-    @State private var yOffsets: [CGFloat] = (0..<25).map { _ in CGFloat.random(in: -300...300) }
-    
-    var body: some View {
-        ZStack {
-            ForEach(0..<25) { i in
-                Circle()
-                    // Neon renkler temaya daha çok yakışır
-                    .fill([Color.orange, .blue, .purple, .green, .yellow, .pink, .cyan].randomElement()!)
-                    .frame(width: CGFloat.random(in: 6...10), height: CGFloat.random(in: 6...10))
-                    .offset(x: animate ? xOffsets[i] : 0,
-                            y: animate ? yOffsets[i] : 0)
-                    .opacity(animate ? 0 : 1)
-                    .scaleEffect(animate ? 0.2 : 1.2)
-            }
-        }
-        .onAppear {
-            withAnimation(.easeOut(duration: 1.5)) {
-                animate = true
-            }
-        }
-    }
-}
-
-// MARK: - DailyDetailView (Gelişmiş Detay Sayfası)
-struct DailyDetailView: View {
-    let date: Date
-    let habits: [Habit]
-    let themeColor: Color
-    @Environment(\.dismiss) var dismiss
-    
-    var filteredHabits: [Habit] {
-        let calendar = Calendar.current
-        return habits.filter { habit in
-            guard let completedDate = habit.completedAt else { return false }
-            return calendar.isDate(completedDate, inSameDayAs: date)
-        }
-    }
-    
-    var body: some View {
-        NavigationStack {
-            ZStack {
-                // Dashboard ile aynı koyu arka plan
-                Color(hex: "0F0F1E").ignoresSafeArea()
-                
-                if filteredHabits.isEmpty {
-                    ContentUnavailableView {
-                        Label("Kayıt Bulunamadı", systemImage: "calendar.badge.exclamationmark")
-                            .foregroundStyle(.white)
-                    } description: {
-                        Text("\(date.formatted(date: .long, time: .omitted)) tarihinde hiç görev tamamlamamışsın kanka.")
-                            .foregroundStyle(.white.opacity(0.6))
-                    }
-                } else {
-                    List {
-                        Section {
-                            ForEach(filteredHabits) { habit in
-                                HStack(spacing: 15) {
-                                    Image(systemName: "checkmark.seal.fill")
-                                        .foregroundStyle(themeColor)
-                                        .font(.title3)
-                                    
-                                    VStack(alignment: .leading) {
-                                        Text(habit.title)
-                                            .font(.body.bold())
-                                            .foregroundStyle(.white)
-                                        Text(habit.completedAt?.formatted(date: .omitted, time: .shortened) ?? "")
-                                            .font(.caption2)
-                                            .foregroundStyle(.white.opacity(0.5))
-                                    }
-                                    
-                                    Spacer()
-                                    
-                                    Text("+\(habit.points) P")
-                                        .font(.caption.bold())
-                                        .padding(.horizontal, 8).padding(.vertical, 4)
-                                        .background(themeColor.opacity(0.2))
-                                        .foregroundStyle(themeColor).cornerRadius(8)
-                                }
-                                .listRowBackground(Color.white.opacity(0.05))
-                            }
-                        } header: {
-                            Text("Tamamlanan Görevler").foregroundStyle(.white.opacity(0.6))
-                        } footer: {
-                            Text("Toplam \(filteredHabits.count) görev tamamlandı.")
-                                .foregroundStyle(.white.opacity(0.4))
-                        }
-                    }
-                    .scrollContentBackground(.hidden)
-                }
-            }
-            .navigationTitle(date.formatted(date: .long, time: .omitted))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarColorScheme(.dark, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Kapat") { dismiss() }
-                        .bold()
-                        .foregroundStyle(themeColor)
-                }
-            }
-        }
-    }
-}
-
-// MARK: - Scalable Button Style (Dokunma Efekti)
-struct ScalableButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.94 : 1.0) // Basınca %6 küçülür
-            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: configuration.isPressed)
-            .opacity(configuration.isPressed ? 0.9 : 1.0) // Hafif saydamlık
-    }
-}
-
-// MARK: - Progress Circle (Hedef Göstergesi)
-struct ProgressCircle: View {
-    var progress: Double
-    var color: Color
-    
-    var body: some View {
-        ZStack {
-            // Arka plandaki sönük halka
-            Circle()
-                .stroke(Color.white.opacity(0.1), lineWidth: 6)
-            
-            // İlerlemeyi gösteren parlayan halka
-            Circle()
-                .trim(from: 0, to: progress)
-                .stroke(
-                    color.gradient,
-                    style: StrokeStyle(lineWidth: 6, lineCap: .round)
-                )
-                .rotationEffect(.degrees(-90)) // Yukarıdan başlaması için
-                .shadow(color: color.opacity(0.3), radius: 5, x: 0, y: 0)
-                .animation(.spring(response: 0.6, dampingFraction: 0.8), value: progress)
-        }
-    }
-}
 #Preview {
-    // 1. Kullanıcı adını "Burak" olarak simüle ediyoruz [cite: 2026-02-17]
     let _ = UserDefaults.standard.set("Burak", forKey: "username")
     let _ = UserDefaults.standard.set(true, forKey: "isLoggedIn")
     
-    // 2. SwiftData için geçici bellek içi (in-memory) bir alan oluşturuyoruz
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
     let container = try! ModelContainer(for: Habit.self, configurations: config)
     
-    // 3. Önizlemede boş görünmesin diye örnek bir veri ekleyelim
     let sampleHabit = Habit(title: "Sabah Koşusu 🏃‍♂️", difficulty: 2)
     container.mainContext.insert(sampleHabit)
     
     return DashboardView()
         .modelContainer(container)
-        .preferredColorScheme(.dark) // Gece mavisi temamız en iyi karanlık modda görünür
+        .preferredColorScheme(.dark)
 }

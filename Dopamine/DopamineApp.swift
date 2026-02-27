@@ -27,7 +27,7 @@ struct SplashScreenView: View {
     @State private var logoRotation: Double = 0.0
     @State private var pulseScale: CGFloat = 1.0
     @State private var blobs: [Blob] = []
-
+    
     // Constants
     private enum Metrics {
         static let splashDuration: TimeInterval = 3.0
@@ -51,10 +51,10 @@ struct SplashScreenView: View {
         static let transitionDuration: Double = 0.6
         static let titleFontSize: CGFloat = 32
     }
-
+    
     private let gradientColors: [Color] = [.orange, .pink, .purple]
     private let accentColors: [Color] = [.orange, .pink, .purple, .cyan, .yellow, .red]
-
+    
     var body: some View {
         Group {
             if isActive {
@@ -72,7 +72,7 @@ struct SplashScreenView: View {
                                     y: contentOpacity == 1 ? blob.offset.y : 0)
                             .opacity(contentOpacity == 1 ? Metrics.blobOpacity : 0)
                     }
-
+                    
                     VStack(spacing: 35) {
                         // Logo + glow
                         ZStack {
@@ -82,7 +82,7 @@ struct SplashScreenView: View {
                                 .blur(radius: Metrics.glowBlur)
                                 .scaleEffect(pulseScale)
                                 .opacity(0.4)
-
+                            
                             Image("appLogo")
                                 .resizable()
                                 .scaledToFit()
@@ -92,7 +92,7 @@ struct SplashScreenView: View {
                                 .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
                                 .accessibilityLabel("Dopamine Logo")
                         }
-
+                        
                         // Titles
                         VStack(spacing: 8) {
                             Text("DOPAMINE")
@@ -101,7 +101,7 @@ struct SplashScreenView: View {
                                 .foregroundStyle(
                                     LinearGradient(colors: gradientColors, startPoint: .leading, endPoint: .trailing)
                                 )
-
+                            
                             Text("Harekete Geç")
                                 .font(.caption.bold())
                                 .foregroundStyle(.secondary)
@@ -135,17 +135,17 @@ private extension SplashScreenView {
                 )
             }
         }
-
+        
         withAnimation(.spring(response: Metrics.appearSpringResponse, dampingFraction: Metrics.appearSpringDamping)) {
             logoScale = 1.0
             contentOpacity = 1.0
             logoRotation = 360
         }
-
+        
         withAnimation(.easeInOut(duration: Metrics.pulseDuration).repeatForever(autoreverses: true)) {
             pulseScale = Metrics.pulseMaxScale
         }
-
+        
         DispatchQueue.main.asyncAfter(deadline: .now() + Metrics.splashDuration) {
             NotificationHelper.requestNotificationPermissionAndScheduleDaily()
             withAnimation(.easeInOut(duration: Metrics.transitionDuration)) {
@@ -171,16 +171,16 @@ private enum NotificationHelper {
             scheduleDailyReminder()
         }
     }
-
+    
     private static func scheduleDailyReminder() {
         let content = UNMutableNotificationContent()
         content.title = "DOPAMINE ⚡️"
         content.body = "Günü bitirmeden son bir kontrol yapalım mı? Halkan ne durumda? 🌈"
         content.sound = .default
-
+        
         var dateComponents = DateComponents()
         dateComponents.hour = 20 // 20:00
-
+        
         let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
         let request = UNNotificationRequest(identifier: "dailyReminder", content: content, trigger: trigger)
         UNUserNotificationCenter.current().add(request)

@@ -1,4 +1,13 @@
+//
+//  HabitRow.swift
+//  Dopamine
+//
+//  Created by PortalGrup on 27.02.2026.
+//
+
+
 import SwiftUI
+import SwiftData
 
 struct HabitRow: View {
     let habit: Habit
@@ -75,4 +84,21 @@ struct HabitRow: View {
         modelContext.delete(habit)
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
     }
+}
+#Preview {
+    // Geçici konteyner
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container = try! ModelContainer(for: Habit.self, configurations: config)
+    
+    // Örnek veri
+    let sampleHabit = Habit(title: "Kitap Oku 📖", difficulty: 1)
+    
+    return HabitRow(
+        habit: sampleHabit,
+        confettiTrigger: .constant(0), // Binding simülasyonu
+        themeColor: .blue
+    )
+    .padding()
+    .background(Color(hex: "0F0F1E"))
+    .modelContainer(container)
 }

@@ -1,4 +1,13 @@
+//
+//  DailyDetailView.swift
+//  Dopamine
+//
+//  Created by PortalGrup on 27.02.2026.
+//
+
+
 import SwiftUI
+import SwiftData
 
 struct DailyDetailView: View {
     let date: Date
@@ -63,4 +72,27 @@ struct DailyDetailView: View {
         }
         .scrollContentBackground(.hidden)
     }
+}
+#Preview {
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container = try! ModelContainer(for: Habit.self, configurations: config)
+    
+    // Örnek tamamlanmış görevler
+    let h1 = Habit(title: "Sabah Yogası", difficulty: 2)
+    h1.isCompleted = true
+    h1.completedAt = Date()
+    
+    let h2 = Habit(title: "Su İç", difficulty: 1)
+    h2.isCompleted = true
+    h2.completedAt = Date()
+    
+    container.mainContext.insert(h1)
+    container.mainContext.insert(h2)
+    
+    return DailyDetailView(
+        date: Date(),
+        habits: [h1, h2],
+        themeColor: .orange
+    )
+    .modelContainer(container)
 }
