@@ -29,7 +29,9 @@ struct DashboardView: View {
     @State private var confettiTrigger = 0
     @State private var tempTarget: Double = 500
     @State private var bgRotation: Double = 0.0
-    
+    @State private var cardFloat: CGFloat = 0
+    @State private var glowPulse: CGFloat = 0
+    @State private var shineX: CGFloat = -1
     // MARK: Body
     var body: some View {
         NavigationStack {
@@ -144,32 +146,164 @@ extension DashboardView {
         VStack(spacing: 25) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Selam, \(userName)!").font(.title2.bold()).foregroundStyle(.white)
+                    Text("Selam, \(userName)!")
+                        .font(.title2.bold())
+                        .foregroundStyle(.white)
+
                     Text(vm.isTargetAchieved ? "🏆 GÜNÜN ŞAMPİYONU" : vm.levelInfo.rank)
-                        .font(.subheadline).bold().foregroundStyle(vm.isTargetAchieved ? .orange : vm.levelInfo.themeColor)
+                        .font(.subheadline).bold()
+                        .foregroundStyle(vm.isTargetAchieved ? .orange : vm.levelInfo.themeColor)
                 }
+
                 Spacer()
-                Button { tempTarget = Double(dailyTarget); isShowingTargetSheet = true } label: {
+
+                Button {
+                    tempTarget = Double(dailyTarget)
+                    isShowingTargetSheet = true
+                } label: {
                     ZStack {
-                        ProgressCircle(progress: vm.dailyProgress, color: vm.isTargetAchieved ? .orange : vm.levelInfo.themeColor).frame(width: 85, height: 85)
+                        Circle()
+                            .stroke(
+                                (vm.isTargetAchieved ? Color.orange : vm.levelInfo.themeColor).opacity(0.35),
+                                lineWidth: 10
+                            )
+                            .blur(radius: 10)
+                            .frame(width: 92, height: 92)
+                            .scaleEffect(1.0 + glowPulse * 0.05)
+                            .opacity(0.7)
+
+                        ProgressCircle(
+                            progress: vm.dailyProgress,
+                            color: vm.isTargetAchieved ? .orange : vm.levelInfo.themeColor
+                        )
+                        .frame(width: 85, height: 85)
+
                         VStack(spacing: -2) {
-                            Text("\(dailyTarget)").font(.system(size: 18, weight: .bold, design: .rounded)).foregroundStyle(.white)
-                            Text("HEDEF").font(.system(size: 8, weight: .black)).foregroundStyle(.white.opacity(0.4))
+                            Text("\(dailyTarget)")
+                                .font(.system(size: 18, weight: .bold, design: .rounded))
+                                .foregroundStyle(.white)
+
+                            Text("HEDEF")
+                                .font(.system(size: 8, weight: .black))
+                                .foregroundStyle(.white.opacity(0.4))
                         }
                     }
-                }.buttonStyle(ScalableButtonStyle())
+                }
+                .buttonStyle(ScalableButtonStyle())
             }
-            
+
             VStack(spacing: 8) {
-                Text("\(vm.totalPoints)").font(.system(size: 64, weight: .black, design: .rounded))
+                Text("\(vm.totalPoints)")
+                    .font(.system(size: 64, weight: .black, design: .rounded))
                     .foregroundStyle(vm.isTargetAchieved ? Color.orange.gradient : vm.levelInfo.themeColor.gradient)
-                Text("TOPLAM PUAN").font(.caption2.bold()).tracking(2).foregroundStyle(.white.opacity(0.5))
+
+                Text("TOPLAM PUAN")
+                    .font(.caption2.bold())
+                    .tracking(2)
+                    .foregroundStyle(.white.opacity(0.5))
             }
-            
+
             levelProgressBar
         }
-        .padding(24).background(.ultraThinMaterial).cornerRadius(32)
-        .overlay(RoundedRectangle(cornerRadius: 32).stroke(.white.opacity(0.12), lineWidth: 1.5))
+        .padding(24)
+        .background(
+            ZStack {
+                // ✅ Theme background (no glass)
+                RoundedRectangle(cornerRadius: 32, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color(hex: "141429"),
+                                Color(hex: "0F0F1E")
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+
+                // ✅ Soft color bloom (themeColor / orange)
+                RoundedRectangle(cornerRadius: 32, style: .continuous)
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                (vm.isTargetAchieved ? Color.orange : vm.levelInfo.themeColor).opacity(0.22),
+                                .clear
+                            ],
+                            center: .topTrailing,
+                            startRadius: 10,
+                            endRadius: 240
+                        )
+                    )
+
+                // ✅ Subtle noise / texture feel (fake grain using tiny opacity)
+                RoundedRectangle(cornerRadius: 32, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                .white.opacity(0.06),
+                                .clear,
+                                .white.opacity(0.03)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .blendMode(.overlay)
+                    .opacity(0.35)
+
+                // ✅ Moving shine (kalsın, premium duruyor)
+                GeometryReader { geo in
+                    Color.white.opacity(0.10)
+                        .mask(
+                            Rectangle()
+                                .fill(
+                                    LinearGradient(
+                                        colors: [.clear, .white.opacity(0.8), .clear],
+                                        startPoint: .top,
+                                        endPoint: .bottom
+                                    )
+                                )
+                                .rotationEffect(.degrees(25))
+                                .offset(x: shineX * geo.size.width * 2.2)
+                        )
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
+                .opacity(0.28)
+            }
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 32, style: .continuous)
+                .stroke(.white.opacity(0.10), lineWidth: 1)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 32, style: .continuous)
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            .white.opacity(0.20),
+                            (vm.isTargetAchieved ? Color.orange : vm.levelInfo.themeColor).opacity(0.20),
+                            .clear
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1.2
+                )
+        )
+        .shadow(color: .black.opacity(0.35), radius: 18, x: 0, y: 12)
+        .shadow(color: (vm.isTargetAchieved ? Color.orange : vm.levelInfo.themeColor).opacity(0.15), radius: 30, x: 0, y: 18)
+        .offset(y: cardFloat)
+        .onAppear {
+            withAnimation(.easeInOut(duration: 3.2).repeatForever(autoreverses: true)) {
+                cardFloat = -6
+            }
+            withAnimation(.easeInOut(duration: 1.8).repeatForever(autoreverses: true)) {
+                glowPulse = 1
+            }
+            withAnimation(.linear(duration: 3.0).repeatForever(autoreverses: false)) {
+                shineX = 1
+            }
+        }
     }
     
     // MARK: Card - Motivation
