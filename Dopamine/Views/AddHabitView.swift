@@ -16,141 +16,133 @@ struct AddHabitView: View {
     @State private var title: String = ""
     @State private var difficulty: Int = 1
     
-    let placeholders = [
-        "15 dakika kitap oku 📖",
-        "Günde 2 litre su iç 💧",
-        "Bugün 5.000 adım at 🏃‍♂️",
-        "Yeni bir Swift özelliği öğren 💻",
-        "Yatağını topla 🛌",
-        "10 dakika meditasyon yap 🧘‍♂️",
-        "Birine teşekkür et 🙏"
-    ]
+    let placeholders = ["15 dk kitap oku 📖", "Su iç 💧", "Yürüyüş yap 🏃‍♂️", "Kod yaz 💻"]
     
-    // Zorluk seviyesine göre renk ve puan belirleyen yardımcı özellikler
-    var difficultyColor: Color {
-        switch difficulty {
-        case 1: return .green
-        case 2: return .orange
-        case 3: return .red
-        default: return .blue
-        }
-    }
-    
-    var difficultyIcon: String {
-        switch difficulty {
-        case 1: return "leaf.fill"
-        case 2: return "bolt.fill"
-        case 3: return "flame.fill"
-        default: return "star.fill"
-        }
+    // Zorluk renkleri ve ikonlarını ayrı hesaplayalım (Derleyiciyi yormaz)
+    private var currentDifficultyColor: Color {
+        difficulty == 1 ? .green : (difficulty == 2 ? .orange : .red)
     }
 
     var body: some View {
         NavigationStack {
             ZStack {
-                Color(uiColor: .systemGroupedBackground).ignoresSafeArea()
+                backgroundBase
                 
-                VStack(spacing: 25) {
-                    // MARK: - Görev Giriş Alanı
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("NE BAŞARACAKSIN?")
-                            .font(.caption2.bold())
-                            .tracking(1)
-                            .foregroundStyle(.secondary)
-                            .padding(.leading, 5)
-                        
-                        TextField(placeholders.randomElement() ?? "Hedefin nedir?", text: $title)
-                            .font(.body)
-                            .padding()
-                            .background(Color(uiColor: .secondarySystemGroupedBackground))
-                            .cornerRadius(15)
-                            .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
-                    }
-                    
-                    // MARK: - Zorluk Seçici Kartı
-                    VStack(spacing: 20) {
-                        HStack {
-                            Text("ZORLUK VE ÖDÜL")
-                                .font(.caption2.bold())
-                                .tracking(1)
-                                .foregroundStyle(.secondary)
-                            Spacer()
-                        }
-                        
-                        Picker("Zorluk", selection: $difficulty) {
-                            Text("Kolay").tag(1)
-                            Text("Orta").tag(2)
-                            Text("Zor").tag(3)
-                        }
-                        .pickerStyle(.segmented)
-                        .padding(4)
-                        .background(difficultyColor.opacity(0.1))
-                        .cornerRadius(12)
-                        
-                        // Dinamik Ödül Göstergesi
-                        HStack(spacing: 15) {
-                            Image(systemName: difficultyIcon)
-                                .font(.title)
-                                .foregroundStyle(difficultyColor.gradient)
-                                .symbolEffect(.bounce, value: difficulty)
-                            
-                            VStack(alignment: .leading) {
-                                Text(difficulty == 1 ? "Basit Başlangıç" : (difficulty == 2 ? "Güçlü Adım" : "Efsane Modu"))
-                                    .font(.headline)
-                                
-                                Text("Bu görev \(difficulty == 1 ? 5 : (difficulty == 2 ? 15 : 40)) puan")
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
-                            }
-                            Spacer()
-                        }
-                        .padding()
-                        .background(Color(uiColor: .secondarySystemGroupedBackground))
-                        .cornerRadius(15)
-                    }
+                VStack(spacing: 30) {
+                    inputSection
+                    difficultySelectionSection
+                    rewardInfoCard
                     
                     Spacer()
                     
-                    // MARK: - Ekle Butonu
-                    Button {
-                        let newHabit = Habit(title: title, difficulty: difficulty)
-                        modelContext.insert(newHabit)
-                        NotificationManager.scheduleTaskReminder(for: newHabit)
-                        dismiss()
-                    } label: {
-                        HStack {
-                            Image(systemName: "plus.circle.fill")
-                            Text("GÖREVİ LİSTEYE EKLE")
-                        }
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(
-                            LinearGradient(
-                                gradient: Gradient(colors: title.isEmpty ? [Color.gray] : [difficultyColor]),
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .foregroundColor(.white)
-                        .cornerRadius(15)
-                        .shadow(color: difficultyColor.opacity(0.3), radius: 10, y: 5)
-                    }
-                    .disabled(title.isEmpty)
-                    .animation(.spring, value: difficulty)
-                    .animation(.easeInOut, value: title.isEmpty)
+                    saveButton
                 }
                 .padding(25)
             }
-            .navigationTitle("Yeni Hedef")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("İptal") { dismiss() }
-                        .foregroundStyle(.secondary)
-                }
-            }
+            .preferredColorScheme(.dark)
         }
     }
 }
 
+// MARK: - Sub-Views (Parçalara Bölünmüş Alanlar)
+extension AddHabitView {
+    
+    private var backgroundBase: some View {
+        ZStack {
+            Color(hex: "0F0F1E").ignoresSafeArea()
+            Circle()
+                .fill(currentDifficultyColor.opacity(0.15))
+                .frame(width: 300)
+                .blur(radius: 80)
+                .offset(x: 100, y: -200)
+        }
+    }
+    
+    private var inputSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // "NE BAŞARACAKSIN?" başlığını buraya geri ekleyelim,
+            // hem şık durur hem de doğal bir boşluk yaratır.
+            Text("NE BAŞARACAKSIN?")
+                .font(.caption2.bold())
+                .tracking(2)
+                .foregroundStyle(.white.opacity(0.5))
+                .padding(.leading, 5)
+            
+            TextField("", text: $title, prompt: Text(placeholders.randomElement()!).foregroundStyle(.white.opacity(0.3)))
+                .padding()
+                .background(Color.white.opacity(0.05))
+                .cornerRadius(15)
+                .overlay(RoundedRectangle(cornerRadius: 15).stroke(.white.opacity(0.1), lineWidth: 1))
+                .foregroundStyle(.white)
+        }
+        .padding(.top, 30) // İşte burası! 30-40 arası bir değerle aşağı itebilirsin.
+    }
+    
+    private var difficultySelectionSection: some View {
+        VStack(alignment: .leading, spacing: 15) {
+            Text("ZORLUK SEVİYESİ").font(.caption2.bold()).tracking(2).foregroundStyle(.white.opacity(0.5))
+            HStack(spacing: 12) {
+                ForEach(1...3, id: \.self) { index in
+                    difficultyBtn(for: index)
+                }
+            }
+        }
+    }
+    
+    private func difficultyBtn(for index: Int) -> some View {
+        Button { withAnimation { difficulty = index } } label: {
+            VStack(spacing: 8) {
+                Image(systemName: index == 1 ? "leaf.fill" : (index == 2 ? "bolt.fill" : "flame.fill"))
+                Text(index == 1 ? "Kolay" : (index == 2 ? "Orta" : "Zor")).font(.caption.bold())
+            }
+            .frame(maxWidth: .infinity).padding(.vertical, 15)
+            .background(difficulty == index ? currentDifficultyColor.opacity(0.2) : Color.white.opacity(0.05))
+            .foregroundStyle(difficulty == index ? currentDifficultyColor : .white.opacity(0.4))
+            .cornerRadius(15)
+            .overlay(RoundedRectangle(cornerRadius: 15).stroke(difficulty == index ? currentDifficultyColor.opacity(0.5) : .clear, lineWidth: 2))
+        }.buttonStyle(ScalableButtonStyle())
+    }
+    
+    private var rewardInfoCard: some View {
+        HStack(spacing: 15) {
+            Image(systemName: difficulty == 1 ? "leaf.fill" : (difficulty == 2 ? "bolt.fill" : "flame.fill"))
+                .foregroundStyle(currentDifficultyColor).font(.title3)
+            VStack(alignment: .leading) {
+                Text("Tamamladığında").font(.caption).foregroundStyle(.white.opacity(0.6))
+                Text("+\(difficulty == 1 ? 5 : (difficulty == 2 ? 15 : 40)) Puan").font(.subheadline.bold())
+            }
+            Spacer()
+        }
+        .padding().background(.ultraThinMaterial).cornerRadius(20)
+    }
+    
+    private var saveButton: some View {
+        Button {
+            modelContext.insert(Habit(title: title, difficulty: difficulty))
+            dismiss()
+        } label: {
+            Text("HEDEFİ EKLE")
+                .bold()
+                .frame(maxWidth: .infinity)
+                .padding()
+                // .gradient kullanarak tipi AnyGradient olarak eşitliyoruz
+                .background(
+                    title.isEmpty ?
+                    Color.gray.opacity(0.3).gradient :
+                    currentDifficultyColor.gradient
+                )
+                .foregroundStyle(title.isEmpty ? .white.opacity(0.3) : .white)
+                .cornerRadius(18)
+        }
+        .disabled(title.isEmpty)
+    }
+}
+#Preview {
+    // Geçici bir veri konteyneri oluşturuyoruz ki Preview çalışabilsin
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container = try! ModelContainer(for: Habit.self, configurations: config)
+    
+    return AddHabitView()
+        .modelContainer(container) // SwiftData için gerekli
+}
