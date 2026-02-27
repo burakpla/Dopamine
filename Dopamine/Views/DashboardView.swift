@@ -642,3 +642,20 @@ struct ProgressCircle: View {
         }
     }
 }
+#Preview {
+    // 1. Kullanıcı adını "Burak" olarak simüle ediyoruz [cite: 2026-02-17]
+    let _ = UserDefaults.standard.set("Burak", forKey: "username")
+    let _ = UserDefaults.standard.set(true, forKey: "isLoggedIn")
+    
+    // 2. SwiftData için geçici bellek içi (in-memory) bir alan oluşturuyoruz
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container = try! ModelContainer(for: Habit.self, configurations: config)
+    
+    // 3. Önizlemede boş görünmesin diye örnek bir veri ekleyelim
+    let sampleHabit = Habit(title: "Sabah Koşusu 🏃‍♂️", difficulty: 2)
+    container.mainContext.insert(sampleHabit)
+    
+    return DashboardView()
+        .modelContainer(container)
+        .preferredColorScheme(.dark) // Gece mavisi temamız en iyi karanlık modda görünür
+}
