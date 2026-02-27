@@ -6,99 +6,100 @@
 //
 
 
+// MARK: - Imports
 import SwiftUI
 import SwiftData
 
+// MARK: - Habit Row View
 struct HabitRow: View {
-    let habit: Habit
-    @Environment(\.modelContext) private var modelContext
+    // MARK: State & Bindings
+    @State private var vm: HabitRowViewModel
     @Binding var confettiTrigger: Int
     var themeColor: Color
     
+    // MARK: Initializer
+    init(habit: Habit, confettiTrigger: Binding<Int>, themeColor: Color) {
+        self._vm = State(initialValue: HabitRowViewModel(habit: habit))
+        self._confettiTrigger = confettiTrigger
+        self.themeColor = themeColor
+    }
+    
+    // MARK: Body
     var body: some View {
         HStack(spacing: 15) {
-            completionButton
+            Button {
+                vm.toggleCompletion(confettiTrigger: &confettiTrigger)
+            } label: {
+                ZStack {
+                    Circle()
+                        .stroke(vm.habit.isCompleted ? themeColor : .white.opacity(0.2), lineWidth: 2)
+                        .frame(width: 28, height: 28)
+                    
+                    if vm.habit.isCompleted {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 28))
+                            .foregroundStyle(themeColor)
+                            .transition(.scale.combined(with: .opacity))
+                    }
+                }
+            }
+            .buttonStyle(ScalableButtonStyle())
             
             VStack(alignment: .leading, spacing: 4) {
-                Text(habit.title)
-                    .font(.system(.body, design: .rounded, weight: .bold))
-                    .strikethrough(habit.isCompleted)
-                    .foregroundStyle(habit.isCompleted ? .white.opacity(0.4) : .white)
+                Text(vm.habit.title)
+                    .font(.headline)
+                    .foregroundStyle(vm.habit.isCompleted ? .white.opacity(0.4) : .white)
+                    .strikethrough(vm.habit.isCompleted)
                 
-                Text("+\(habit.points) Puan")
-                    .font(.system(size: 10, weight: .black))
-                    .padding(.horizontal, 8).padding(.vertical, 2)
-                    .background(themeColor.opacity(0.2))
-                    .foregroundStyle(themeColor)
-                    .cornerRadius(6)
+                Text("+\(vm.habit.points) Puan")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(themeColor.opacity(0.8))
             }
             
             Spacer()
             
-            actionButtons
+            Text(difficultyText)
+                .font(.system(size: 8, weight: .black))
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(vm.habit.isCompleted ? .white.opacity(0.05) : themeColor.opacity(0.1))
+                .foregroundStyle(vm.habit.isCompleted ? .white.opacity(0.2) : themeColor)
+                .cornerRadius(6)
         }
         .padding()
         .background(Color.white.opacity(0.05))
         .cornerRadius(20)
-        .overlay(RoundedRectangle(cornerRadius: 20).stroke(.white.opacity(0.05), lineWidth: 1))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20)
+                .stroke(vm.habit.isCompleted ? themeColor.opacity(0.2) : .clear, lineWidth: 1)
+        )
     }
     
-    // Alt parçalar
-    private var completionButton: some View {
-        Button {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                habit.isCompleted.toggle()
-                if habit.isCompleted {
-                    habit.completedAt = Date()
-                    confettiTrigger += 1
-                    UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
-                } else {
-                    habit.completedAt = nil
-                }
-            }
-        } label: {
-            Image(systemName: habit.isCompleted ? "checkmark.circle.fill" : "circle")
-                .font(.title2)
-                .foregroundStyle(habit.isCompleted ? .green : themeColor)
+    // MARK: Helpers
+    private var difficultyText: String {
+        switch vm.habit.difficulty {
+        case 1: return "KOLAY"
+        case 2: return "ORTA"
+        case 3: return "ZOR"
+        default: return ""
         }
-    }
-    
-    private var actionButtons: some View {
-        HStack(spacing: 18) {
-            Button(action: duplicate) {
-                Image(systemName: "plus.square.on.square").foregroundStyle(.white.opacity(0.4))
-            }
-            Button(action: deleteHabit) {
-                Image(systemName: "trash").foregroundStyle(.red.opacity(0.6))
-            }
-        }
-    }
-    
-    private func duplicate() {
-        let newHabit = Habit(title: habit.title, difficulty: habit.difficulty)
-        modelContext.insert(newHabit)
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-    }
-    
-    private func deleteHabit() {
-        modelContext.delete(habit)
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
     }
 }
+
+// MARK: - Preview
 #Preview {
-    // Geçici konteyner
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
     let container = try! ModelContainer(for: Habit.self, configurations: config)
     
-    // Örnek veri
     let sampleHabit = Habit(title: "Kitap Oku 📖", difficulty: 1)
     
     return HabitRow(
         habit: sampleHabit,
-        confettiTrigger: .constant(0), // Binding simülasyonu
+        confettiTrigger: .constant(0),
         themeColor: .blue
     )
     .padding()
     .background(Color(hex: "0F0F1E"))
     .modelContainer(container)
 }
+

@@ -6,9 +6,12 @@
 //
 
 
+// MARK: - Imports
 import Foundation
 
+// MARK: - Quote Provider
 struct QuoteProvider {
+    // MARK: Constants
     static let quotes = [
         "Bugün, dünden daha iyi olmak için harika bir gün.",
         "Küçük adımlar, büyük sonuçlar doğurur.",
@@ -19,6 +22,7 @@ struct QuoteProvider {
         "Bugünkü emeğin, yarınki gururun olacak."
     ]
     
+    // MARK: Computed
     static var dailyQuote: String {
         let calendar = Calendar.current
         let dayOfYear = calendar.ordinality(of: .day, in: .year, for: Date()) ?? 0

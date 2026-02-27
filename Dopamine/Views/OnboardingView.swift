@@ -5,17 +5,17 @@
 //  Created by PortalGrup on 21.02.2026.
 //
 
+// MARK: - Imports
 import SwiftUI
 import UIKit
 
-import SwiftUI
-
 struct OnboardingView: View {
-    // MARK: - Persisted values
+    // MARK: - Onboarding View
+    
+    // MARK: State
     @AppStorage("userName") private var userName: String = ""
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding: Bool = false
-    
-    // MARK: - UI State
+    @State private var vm = OnboardingViewModel()
     @State private var nameInput: String = ""
     @FocusState private var nameFieldFocused: Bool
     @State private var shimmerPhase: CGFloat = -1.0
@@ -24,7 +24,7 @@ struct OnboardingView: View {
     @State private var contentOpacity: Double = 0.0
     @State private var contentOffset: CGFloat = 20
     
-    // MARK: - Constants
+    // MARK: Metrics
     private enum Metrics {
         static let iconSize: CGFloat = 110
         static let fieldCornerRadius: CGFloat = 20
@@ -32,28 +32,27 @@ struct OnboardingView: View {
         static let horizontalPadding: CGFloat = 36
     }
     
+    // MARK: Validation
     private var isNameValid: Bool {
         nameInput.trimmingCharacters(in: .whitespacesAndNewlines).count >= 2
     }
     
+    // MARK: Body
     var body: some View {
         ZStack {
-            // 1. Dinamik Arka Plan (Mesh Gradient Etkisi)
             backgroundGradient
                 .ignoresSafeArea()
             
-            // 2. Ana İçerik
             VStack(spacing: 32) {
                 Spacer()
                 
-                // Logo Bölümü
                 ZStack {
                     Circle()
                         .fill(Color.white.opacity(0.15))
                         .frame(width: 150, height: 150)
                         .blur(radius: 20)
                     
-                    Image(systemName: "bolt.ring.closed") // "appLogo" yerine SF Symbol koydum, kendi logonla değiştirirsin
+                    Image(systemName: "bolt.ring.closed")
                         .resizable()
                         .scaledToFit()
                         .symbolRenderingMode(.hierarchical)
@@ -75,12 +74,10 @@ struct OnboardingView: View {
                 }
                 .multilineTextAlignment(.center)
                 
-                // Giriş Alanı (Glassmorphic)
                 textFieldSection
                 
                 Spacer()
                 
-                // Devam Et Butonu
                 actionButton
                     .padding(.bottom, 40)
             }
@@ -100,12 +97,11 @@ struct OnboardingView: View {
         }
     }
     
-    // MARK: - Background View
+    // MARK: Subviews - Background
     private var backgroundGradient: some View {
         ZStack {
-            Color(hex: "0F0F1E") // Koyu premium arka plan
+            Color(hex: "0F0F1E") 
             
-            // Hareket eden renkli küreler
             Group {
                 Circle()
                     .fill(Color.purple.opacity(0.5))
@@ -123,7 +119,7 @@ struct OnboardingView: View {
         }
     }
     
-    // MARK: - TextField Section
+    // MARK: Subviews - Text Field
     private var textFieldSection: some View {
         VStack(alignment: .center, spacing: 15) {
             TextField("", text: $nameInput, prompt: Text("Adın...").foregroundStyle(.white.opacity(0.4)))
@@ -153,22 +149,18 @@ struct OnboardingView: View {
         }
     }
     
-    // MARK: - Action Button
-    // MARK: - Action Button (Yeni Renk Paleti ve Glow Efekti)
+    // MARK: Subviews - Action Button
     private var actionButton: some View {
         Button(action: saveAndProceed) {
             ZStack {
-                // Ana Buton Gövdesi (Canlı Gradyan)
                 RoundedRectangle(cornerRadius: 24, style: .continuous)
                     .fill(
                         isNameValid ?
                         LinearGradient(colors: [Color(hex: "8E2DE2"), Color(hex: "4A00E0")], startPoint: .leading, endPoint: .trailing) :
                             LinearGradient(colors: [Color.white.opacity(0.1), Color.white.opacity(0.05)], startPoint: .leading, endPoint: .trailing)
                     )
-                // Aktifken dışarıya hafif bir mor ışık yayar
                     .shadow(color: isNameValid ? Color(hex: "8E2DE2").opacity(0.5) : Color.clear, radius: 15, x: 0, y: 8)
                 
-                // Butonun içindeki parıltı (Glossy etki)
                 if isNameValid {
                     RoundedRectangle(cornerRadius: 24, style: .continuous)
                         .stroke(LinearGradient(colors: [.white.opacity(0.5), .clear], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1.5)
@@ -178,7 +170,6 @@ struct OnboardingView: View {
                     .font(.system(.headline, design: .rounded, weight: .bold))
                     .foregroundStyle(isNameValid ? .white : .white.opacity(0.3))
                 
-                // Geliştirilmiş Shimmer (Işık Süzmesi)
                 if isNameValid {
                     GeometryReader { geo in
                         Color.white.opacity(0.2)
@@ -197,7 +188,6 @@ struct OnboardingView: View {
         }
         .frame(height: Metrics.buttonHeight)
         .disabled(!isNameValid)
-        // Basıldığında küçülme efekti
         .scaleEffect(isButtonAnimating ? 0.96 : (isNameValid ? 1.02 : 1.0))
         .animation(.spring(response: 0.4, dampingFraction: 0.7), value: isNameValid)
         .onAppear {
@@ -207,6 +197,7 @@ struct OnboardingView: View {
         }
     }
     
+    // MARK: Actions
     private func saveAndProceed() {
         guard isNameValid else { return }
         UIImpactFeedbackGenerator(style: .heavy).impactOccurred()

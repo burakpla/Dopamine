@@ -6,9 +6,12 @@
 //
 
 
+// MARK: - Imports
 import Foundation
 
+// MARK: - Daily Progress Model
 struct DailyProgress: Identifiable {
+    // MARK: Properties
     let id = UUID()
     let date: Date
     let points: Int

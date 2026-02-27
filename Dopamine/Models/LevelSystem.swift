@@ -5,12 +5,15 @@
 //  Created by PortalGrup on 21.02.2026.
 //
 
-
+// MARK: - Imports
 import SwiftUI
 
+// MARK: - Level System Model
 struct LevelSystem {
+    // MARK: Properties
     let totalPoints: Int
     
+    // MARK: Computed
     var level: Int {
         return (totalPoints / 200) + 1
     }
@@ -35,3 +38,4 @@ struct LevelSystem {
         }
     }
 }
+

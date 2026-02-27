@@ -6,13 +6,17 @@
 //
 
 
+// MARK: - Imports
 import UserNotifications
 
+// MARK: - Notification Manager
 struct NotificationManager {
+    // MARK: Permission
     static func requestPermission() {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { _, _ in }
     }
     
+    // MARK: Scheduling - Daily Reminder
     static func scheduleDailyReminder() {
         let content = UNMutableNotificationContent()
         content.title = "DOPAMINE ⚡️"
@@ -27,6 +31,7 @@ struct NotificationManager {
         UNUserNotificationCenter.current().add(request)
     }
     
+    // MARK: Scheduling - Task Reminder
     static func scheduleTaskReminder(for habit: Habit) {
         let content = UNMutableNotificationContent()
         content.title = "Hala Bitmedi mi? ⏳"
@@ -39,7 +44,9 @@ struct NotificationManager {
         UNUserNotificationCenter.current().add(request)
     }
     
+    // MARK: Cancellation
     static func cancelTaskReminder(for habit: Habit) {
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [habit.id.uuidString])
     }
 }
+

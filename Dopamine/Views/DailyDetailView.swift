@@ -6,78 +6,100 @@
 //
 
 
+// MARK: - Imports
 import SwiftUI
 import SwiftData
 
+// MARK: - Daily Detail View
 struct DailyDetailView: View {
-    let date: Date
-    let habits: [Habit]
-    let themeColor: Color
-    @Environment(\.dismiss) var dismiss
+    // MARK: State & Dependencies
+    @Environment(\.dismiss) private var dismiss
+    @State private var vm: DailyDetailViewModel
+    var themeColor: Color
     
-    var filteredHabits: [Habit] {
-        let calendar = Calendar.current
-        return habits.filter { habit in
-            guard let completedDate = habit.completedAt else { return false }
-            return calendar.isDate(completedDate, inSameDayAs: date)
-        }
+    // MARK: Initializer
+    init(date: Date, habits: [Habit], themeColor: Color) {
+        _vm = State(initialValue: DailyDetailViewModel(date: date, habits: habits))
+        self.themeColor = themeColor
     }
     
+    // MARK: Body
     var body: some View {
         NavigationStack {
             ZStack {
                 Color(hex: "0F0F1E").ignoresSafeArea()
                 
-                if filteredHabits.isEmpty {
-                    emptyState
-                } else {
-                    habitList
+                // Sections
+                VStack(spacing: 25) {
+                    VStack(spacing: 10) {
+                        Text("\(vm.dailyTotalPoints) PUAN")
+                            .font(.system(size: 40, weight: .black, design: .rounded))
+                            .foregroundStyle(themeColor.gradient)
+                        
+                        Text(vm.dailySummary)
+                            .font(.subheadline)
+                            .foregroundStyle(.white.opacity(0.7))
+                    }
+                    .padding(30)
+                    .frame(maxWidth: .infinity)
+                    .background(Color.white.opacity(0.05))
+                    .cornerRadius(24)
+                    
+                    VStack(alignment: .leading, spacing: 15) {
+                        Text("TAMAMLANANLAR")
+                            .font(.caption2.bold())
+                            .tracking(2)
+                            .foregroundStyle(.white.opacity(0.5))
+                        
+                        if vm.completedHabits.isEmpty {
+                            ContentUnavailableView("Kayıt Bulunamadı", systemImage: "calendar.badge.exclamationmark")
+                                .opacity(0.5)
+                        } else {
+                            ScrollView {
+                                VStack(spacing: 12) {
+                                    ForEach(vm.completedHabits) { habit in
+                                        HStack {
+                                            Image(systemName: "checkmark.seal.fill")
+                                                .foregroundStyle(themeColor)
+                                            Text(habit.title)
+                                                .foregroundStyle(.white)
+                                            Spacer()
+                                            Text("+\(habit.points)P")
+                                                .font(.caption.bold())
+                                                .padding(6)
+                                                .background(themeColor.opacity(0.2))
+                                                .cornerRadius(8)
+                                        }
+                                        .padding()
+                                        .background(Color.white.opacity(0.05))
+                                        .cornerRadius(16)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    Spacer()
                 }
+                .padding()
             }
-            .navigationTitle(date.formatted(date: .long, time: .omitted))
+            .navigationTitle(vm.date.formatted(date: .long, time: .omitted))
             .navigationBarTitleDisplayMode(.inline)
+            // Toolbar
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Kapat") { dismiss() }.bold().foregroundStyle(themeColor)
-                }
-            }
-            .preferredColorScheme(.dark)
-        }
-    }
-    
-    private var emptyState: some View {
-        ContentUnavailableView {
-            Label("Kayıt Bulunamadı", systemImage: "calendar.badge.exclamationmark")
-        } description: {
-            Text("Bu tarihte hiç görev tamamlamamışsın kanka.")
-        }
-    }
-    
-    private var habitList: some View {
-        List {
-            Section("Tamamlanan Görevler") {
-                ForEach(filteredHabits) { habit in
-                    HStack {
-                        Image(systemName: "checkmark.seal.fill").foregroundStyle(themeColor)
-                        VStack(alignment: .leading) {
-                            Text(habit.title).font(.body.bold())
-                            Text(habit.completedAt?.formatted(date: .omitted, time: .shortened) ?? "").font(.caption2).foregroundStyle(.white.opacity(0.5))
-                        }
-                        Spacer()
-                        Text("+\(habit.points) P").font(.caption.bold()).padding(6).background(themeColor.opacity(0.2)).foregroundStyle(themeColor).cornerRadius(8)
-                    }
-                    .listRowBackground(Color.white.opacity(0.05))
+                    Button("Kapat") { dismiss() }.foregroundStyle(.white)
                 }
             }
         }
-        .scrollContentBackground(.hidden)
     }
 }
+
+// MARK: - Preview
 #Preview {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
     let container = try! ModelContainer(for: Habit.self, configurations: config)
     
-    // Örnek tamamlanmış görevler
     let h1 = Habit(title: "Sabah Yogası", difficulty: 2)
     h1.isCompleted = true
     h1.completedAt = Date()

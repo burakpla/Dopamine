@@ -6,23 +6,27 @@
 //
 
 
+// MARK: - Imports
 import SwiftUI
 import SwiftData
 
+// MARK: - Add Habit View
 struct AddHabitView: View {
+    // MARK: Environment & State
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) var dismiss
-    
+    @State private var vm = AddHabitViewModel()
     @State private var title: String = ""
     @State private var difficulty: Int = 1
     
     let placeholders = ["15 dk kitap oku 📖", "Su iç 💧", "Yürüyüş yap 🏃‍♂️", "Kod yaz 💻"]
     
-    // Zorluk renkleri ve ikonlarını ayrı hesaplayalım (Derleyiciyi yormaz)
+    // MARK: Computed
     private var currentDifficultyColor: Color {
         difficulty == 1 ? .green : (difficulty == 2 ? .orange : .red)
     }
     
+    // MARK: Body
     var body: some View {
         NavigationStack {
             ZStack {
@@ -45,9 +49,10 @@ struct AddHabitView: View {
     }
 }
 
-// MARK: - Sub-Views (Parçalara Bölünmüş Alanlar)
+// MARK: - View Composition
 extension AddHabitView {
     
+    // MARK: Background
     private var backgroundBase: some View {
         ZStack {
             Color(hex: "0F0F1E").ignoresSafeArea()
@@ -59,10 +64,10 @@ extension AddHabitView {
         }
     }
     
+    // MARK: Section - Input
     private var inputSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // "NE BAŞARACAKSIN?" başlığını buraya geri ekleyelim,
-            // hem şık durur hem de doğal bir boşluk yaratır.
+            
             Text("NE BAŞARACAKSIN?")
                 .font(.caption2.bold())
                 .tracking(2)
@@ -76,9 +81,10 @@ extension AddHabitView {
                 .overlay(RoundedRectangle(cornerRadius: 15).stroke(.white.opacity(0.1), lineWidth: 1))
                 .foregroundStyle(.white)
         }
-        .padding(.top, 30) // İşte burası! 30-40 arası bir değerle aşağı itebilirsin.
+        .padding(.top, 30)
     }
     
+    // MARK: Section - Difficulty Selection
     private var difficultySelectionSection: some View {
         VStack(alignment: .leading, spacing: 15) {
             Text("ZORLUK SEVİYESİ").font(.caption2.bold()).tracking(2).foregroundStyle(.white.opacity(0.5))
@@ -90,6 +96,7 @@ extension AddHabitView {
         }
     }
     
+    // MARK: Component - Difficulty Button
     private func difficultyBtn(for index: Int) -> some View {
         Button { withAnimation { difficulty = index } } label: {
             VStack(spacing: 8) {
@@ -104,6 +111,7 @@ extension AddHabitView {
         }.buttonStyle(ScalableButtonStyle())
     }
     
+    // MARK: Card - Reward Info
     private var rewardInfoCard: some View {
         HStack(spacing: 15) {
             Image(systemName: difficulty == 1 ? "leaf.fill" : (difficulty == 2 ? "bolt.fill" : "flame.fill"))
@@ -117,6 +125,7 @@ extension AddHabitView {
         .padding().background(.ultraThinMaterial).cornerRadius(20)
     }
     
+    // MARK: Button - Save
     private var saveButton: some View {
         Button {
             modelContext.insert(Habit(title: title, difficulty: difficulty))
@@ -126,7 +135,6 @@ extension AddHabitView {
                 .bold()
                 .frame(maxWidth: .infinity)
                 .padding()
-            // .gradient kullanarak tipi AnyGradient olarak eşitliyoruz
                 .background(
                     title.isEmpty ?
                     Color.gray.opacity(0.3).gradient :
@@ -138,11 +146,12 @@ extension AddHabitView {
         .disabled(title.isEmpty)
     }
 }
+
+// MARK: - Preview
 #Preview {
-    // Geçici bir veri konteyneri oluşturuyoruz ki Preview çalışabilsin
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
     let container = try! ModelContainer(for: Habit.self, configurations: config)
     
     return AddHabitView()
-        .modelContainer(container) // SwiftData için gerekli
+        .modelContainer(container)
 }

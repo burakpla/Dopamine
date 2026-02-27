@@ -1,15 +1,12 @@
-//
-//  DopamineApp.swift
-//  Dopamine
-//
-//  Created by PortalGrup on 21.02.2026.
-//
+// MARK: - Imports
 import SwiftUI
 import SwiftData
 import UserNotifications
 
+// MARK: - App Entry
 @main
 struct DopamineApp: App {
+    // MARK: Scene
     var body: some Scene {
         WindowGroup {
             SplashScreenView()
@@ -20,7 +17,7 @@ struct DopamineApp: App {
 
 // MARK: - Splash Screen
 struct SplashScreenView: View {
-    // State
+    // MARK: State
     @State private var isActive = false
     @State private var logoScale: CGFloat = 0.6
     @State private var contentOpacity: Double = 0.0
@@ -28,7 +25,7 @@ struct SplashScreenView: View {
     @State private var pulseScale: CGFloat = 1.0
     @State private var blobs: [Blob] = []
     
-    // Constants
+    // MARK: Constants
     private enum Metrics {
         static let splashDuration: TimeInterval = 3.0
         static let logoSize: CGFloat = 160
@@ -52,9 +49,11 @@ struct SplashScreenView: View {
         static let titleFontSize: CGFloat = 32
     }
     
+    // MARK: Appearance
     private let gradientColors: [Color] = [.orange, .pink, .purple]
     private let accentColors: [Color] = [.orange, .pink, .purple, .cyan, .yellow, .red]
     
+    // MARK: View
     var body: some View {
         Group {
             if isActive {
@@ -62,7 +61,6 @@ struct SplashScreenView: View {
             } else {
                 ZStack {
                     Color.white.ignoresSafeArea()
-                    // Background blobs
                     ForEach(blobs) { blob in
                         RoundedRectangle(cornerRadius: Metrics.blobCornerRadius)
                             .fill(blob.color)
@@ -74,7 +72,6 @@ struct SplashScreenView: View {
                     }
                     
                     VStack(spacing: 35) {
-                        // Logo + glow
                         ZStack {
                             Circle()
                                 .fill(LinearGradient(colors: gradientColors, startPoint: .topLeading, endPoint: .bottomTrailing))
@@ -93,7 +90,6 @@ struct SplashScreenView: View {
                                 .accessibilityLabel("Dopamine Logo")
                         }
                         
-                        // Titles
                         VStack(spacing: 8) {
                             Text("DOPAMINE")
                                 .font(.system(size: Metrics.titleFontSize, weight: .black, design: .rounded))
@@ -120,7 +116,6 @@ struct SplashScreenView: View {
 // MARK: - Lifecycle & Helpers
 private extension SplashScreenView {
     func onAppear() {
-        // Precompute blobs once to avoid random layout changes on body recomputation
         if blobs.isEmpty {
             blobs = (0..<Metrics.blobCount).map { index in
                 Blob(
@@ -179,7 +174,7 @@ private enum NotificationHelper {
         content.sound = .default
         
         var dateComponents = DateComponents()
-        dateComponents.hour = 20 // 20:00
+        dateComponents.hour = 20
         
         let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
         let request = UNNotificationRequest(identifier: "dailyReminder", content: content, trigger: trigger)
