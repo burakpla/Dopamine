@@ -8,314 +8,236 @@
 import SwiftUI
 import UIKit
 
+import SwiftUI
+
 struct OnboardingView: View {
-    // Persisted values
+    // MARK: - Persisted values
     @AppStorage("userName") private var userName: String = ""
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding: Bool = false
 
-    // UI State
+    // MARK: - UI State
     @State private var nameInput: String = ""
     @FocusState private var nameFieldFocused: Bool
     @State private var shimmerPhase: CGFloat = -1.0
-    @State private var isPressingButton: Bool = false
-    @State private var bgPulse: CGFloat = 0.0
+    @State private var bgRotation: Double = 0.0
+    @State private var isButtonAnimating = false
+    @State private var contentOpacity: Double = 0.0
+    @State private var contentOffset: CGFloat = 20
 
-    // Constants
+    // MARK: - Constants
     private enum Metrics {
-        static let iconSize: CGFloat = 100
-        static let titleFontSize: CGFloat = 32
-        static let fieldCornerRadius: CGFloat = 15
-        static let fieldHorizontalPadding: CGFloat = 40
-        static let buttonHeight: CGFloat = 60
-        static let buttonCornerRadius: CGFloat = 20
-        static let outerSpacing: CGFloat = 40
-        static let bottomPadding: CGFloat = 30
-        static let shadowRadius: CGFloat = 10
-        static let subtitleLineSpacing: CGFloat = 2
-        static let buttonGradientCorner: CGFloat = 22
+        static let iconSize: CGFloat = 110
+        static let fieldCornerRadius: CGFloat = 20
+        static let buttonHeight: CGFloat = 64
+        static let horizontalPadding: CGFloat = 36
     }
 
     private var isNameValid: Bool {
-        !nameInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
-
-    private var buttonBackground: Color {
-        isNameValid ? Color("AccentColor") : Color.gray.opacity(0.5)
+        nameInput.trimmingCharacters(in: .whitespacesAndNewlines).count >= 2
     }
 
     var body: some View {
         ZStack {
-            LinearGradient(
-                colors: [
-                    Color("AccentColor").opacity(0.45),
-                    Color.purple.opacity(0.35),
-                    Color.blue.opacity(0.25)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
-            .overlay(
-                ZStack {
-                    // Multiple animated radial glows across the screen
-                    RadialGradient(
-                        colors: [
-                            Color.white.opacity(0.18 + 0.06 * Double(bgPulse)),
-                            Color.clear
-                        ],
-                        center: .topLeading,
-                        startRadius: 8 + 6 * bgPulse,
-                        endRadius: 420 + 40 * bgPulse
-                    )
-                    .offset(x: -40 + bgPulse * 10, y: -20 + bgPulse * 6)
-                    .blendMode(.screen)
-
-                    RadialGradient(
-                        colors: [
-                            Color.white.opacity(0.14 + 0.05 * Double(bgPulse)),
-                            Color.clear
-                        ],
-                        center: .topTrailing,
-                        startRadius: 12 + 8 * bgPulse,
-                        endRadius: 380 + 35 * bgPulse
-                    )
-                    .offset(x: 30 - bgPulse * 8, y: -10 - bgPulse * 5)
-                    .blendMode(.screen)
-
-                    RadialGradient(
-                        colors: [
-                            Color.white.opacity(0.12 + 0.06 * Double(bgPulse)),
-                            Color.clear
-                        ],
-                        center: .bottomLeading,
-                        startRadius: 10 + 6 * bgPulse,
-                        endRadius: 400 + 35 * bgPulse
-                    )
-                    .offset(x: -20 + bgPulse * 6, y: 30 - bgPulse * 8)
-                    .blendMode(.screen)
-
-                    RadialGradient(
-                        colors: [
-                            Color.white.opacity(0.16 + 0.06 * Double(bgPulse)),
-                            Color.clear
-                        ],
-                        center: .bottomTrailing,
-                        startRadius: 10 + 6 * bgPulse,
-                        endRadius: 420 + 35 * bgPulse
-                    )
-                    .offset(x: 20 - bgPulse * 6, y: 40 + bgPulse * 6)
-                    .blendMode(.screen)
-
-                    // Central soft glow
-                    RadialGradient(
-                        colors: [
-                            Color.white.opacity(0.10 + 0.05 * Double(bgPulse)),
-                            Color.clear
-                        ],
-                        center: .center,
-                        startRadius: 6 + 4 * bgPulse,
-                        endRadius: 380 + 30 * bgPulse
-                    )
-                    .blendMode(.screen)
-
-                    // Subtle moving linear tint on top
-                    LinearGradient(
-                        colors: [
-                            Color.purple.opacity(0.10 + 0.05 * Double(bgPulse)),
-                            Color.blue.opacity(0.08)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                    .opacity(0.75)
-                    .offset(x: bgPulse * 10, y: bgPulse * -8)
-                    .blendMode(.plusLighter)
-                    
-                    // Full-screen sweeping gradient pass
-                    LinearGradient(
-                        colors: [
-                            Color.white.opacity(0.0),
-                            Color.white.opacity(0.18),
-                            Color.white.opacity(0.0)
-                        ],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                    .scaleEffect(3.0) // make it large enough to sweep across
-                    .rotationEffect(.degrees(25))
-                    .offset(x: -300 + bgPulse * 600, y: 0)
-                    .blendMode(.screen)
-                    .opacity(0.35)
-                    .allowsHitTesting(false)
-                }
+            // 1. Dinamik Arka Plan (Mesh Gradient Etkisi)
+            backgroundGradient
                 .ignoresSafeArea()
-            )
 
-            VStack(spacing: Metrics.outerSpacing) {
+            // 2. Ana İçerik
+            VStack(spacing: 32) {
                 Spacer()
 
-                Image("appLogo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: Metrics.iconSize, height: Metrics.iconSize)
-                    .shadow(color: .purple.opacity(0.2), radius: 20, x: 0, y: 10)
-                    .accessibilityHidden(true)
+                // Logo Bölümü
+                ZStack {
+                    Circle()
+                        .fill(Color.white.opacity(0.15))
+                        .frame(width: 150, height: 150)
+                        .blur(radius: 20)
+                    
+                    Image(systemName: "bolt.ring.closed") // "appLogo" yerine SF Symbol koydum, kendi logonla değiştirirsin
+                        .resizable()
+                        .scaledToFit()
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(.white)
+                        .frame(width: Metrics.iconSize, height: Metrics.iconSize)
+                        .rotationEffect(.degrees(isButtonAnimating ? 5 : -5))
+                }
+                .scaleEffect(contentOpacity)
 
-                VStack(spacing: 10) {
-                    Text("Dopamine'e Hoş Geldin")
-                        .font(.system(size: Metrics.titleFontSize, weight: .heavy, design: .rounded))
-                        .foregroundStyle(.primary)
-                        .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
-
-                    Text("Sana nasıl hitap etmemizi istersin?")
-                        .font(.subheadline.weight(.medium))
-                        .foregroundStyle(.secondary)
-                        .lineSpacing(Metrics.subtitleLineSpacing)
+                // Başlıklar
+                VStack(spacing: 12) {
+                    Text("Dopamine")
+                        .font(.system(size: 42, weight: .black, design: .rounded))
+                        .foregroundStyle(.white)
+                    
+                    Text("Sana nasıl hitap edelim?")
+                        .font(.title3.weight(.medium))
+                        .foregroundStyle(.white.opacity(0.8))
                 }
                 .multilineTextAlignment(.center)
 
-                TextField("Adın...", text: $nameInput)
-                    .font(.title3)
-                    .padding(.vertical, 14)
-                    .padding(.horizontal, 18)
-                    .background(.ultraThinMaterial)
-                    .cornerRadius(Metrics.fieldCornerRadius)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: Metrics.fieldCornerRadius)
-                            .strokeBorder(Color.white.opacity(0.35), lineWidth: 1)
-                    )
-                    .overlay(alignment: .trailing) {
-                        HStack(spacing: 8) {
-                            if isNameValid {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundStyle(.green)
-                                    .symbolRenderingMode(.hierarchical)
-                            }
-                            if !nameInput.isEmpty {
-                                Button {
-                                    nameInput = ""
-                                } label: {
-                                    Image(systemName: "xmark.circle.fill")
-                                        .foregroundStyle(.secondary)
-                                        .symbolRenderingMode(.hierarchical)
-                                }
-                                .buttonStyle(.plain)
-                                .padding(.trailing, 12)
-                                .contentShape(Rectangle())
-                            }
-                        }
-                    }
-                    .contentShape(RoundedRectangle(cornerRadius: Metrics.fieldCornerRadius))
-                    .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 4)
-                    .padding(.horizontal, Metrics.fieldHorizontalPadding)
-                    .multilineTextAlignment(.center)
-                    .textInputAutocapitalization(.words)
-                    .submitLabel(.done)
-                    .focused($nameFieldFocused)
-                    .onSubmit(saveAndProceed)
-                    .accessibilityLabel("Adın")
+                // Giriş Alanı (Glassmorphic)
+                textFieldSection
 
                 Spacer()
 
-                Button {
-                    let generator = UIImpactFeedbackGenerator(style: .light)
-                    generator.impactOccurred()
-                    saveAndProceed()
-                } label: {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: Metrics.buttonGradientCorner, style: .continuous)
-                            .fill(
-                                LinearGradient(
-                                    colors: isNameValid
-                                    ? [Color("AccentColor"), Color.purple.opacity(0.85)]
-                                    : [Color("AccentColor").opacity(0.8), Color("AccentColor").opacity(0.6)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .overlay(
-                                RoundedRectangle(cornerRadius: Metrics.buttonGradientCorner, style: .continuous)
-                                    .stroke(Color.white.opacity(0.15), lineWidth: 1)
-                            )
-                            .shadow(color: Color("AccentColor").opacity(0.35), radius: Metrics.shadowRadius, y: 6)
-                            .overlay(
-                                Group {
-                                    if isNameValid {
-                                        RoundedRectangle(cornerRadius: Metrics.buttonGradientCorner, style: .continuous)
-                                            .stroke(Color.white.opacity(0.35), lineWidth: 1.2)
-                                            .blur(radius: 1.5)
-                                            .blendMode(.screen)
-                                            .opacity(0.9)
-                                            .padding(-0.5)
-                                    }
-                                }
-                            )
-                            .shadow(color: isNameValid ? Color("AccentColor").opacity(0.55) : Color("AccentColor").opacity(0.25), radius: isNameValid ? 18 : 8, y: isNameValid ? 10 : 6)
-
-                        Text("Başlayalım")
-                            .font(.headline.weight(.semibold))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal)
-
-                        // Shimmer overlay
-                        RoundedRectangle(cornerRadius: Metrics.buttonGradientCorner, style: .continuous)
-                            .fill(
-                                LinearGradient(
-                                    colors: [Color.white.opacity(0.0), Color.white.opacity(0.35), Color.white.opacity(0.0)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .rotationEffect(.degrees(15))
-                            .offset(x: shimmerPhase * 240, y: 0)
-                            .blendMode(.screen)
-                            .opacity(isNameValid ? 1.0 : 0.25)
-                            .blur(radius: isNameValid ? 0 : 0.5)
-                            .allowsHitTesting(false)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: Metrics.buttonHeight)
-                    .opacity(isNameValid ? 1 : 0.6)
-                    .scaleEffect(isNameValid ? 1.03 : 0.98)
-                    .scaleEffect(isPressingButton ? 0.98 : 1.0)
-                    .brightness(isNameValid ? 0.04 : 0.0)
-                    .saturation(isNameValid ? 1.12 : 1.0)
-                    .animation(.spring(response: 0.45, dampingFraction: 0.85), value: isNameValid)
-                }
-                .gesture(
-                    DragGesture(minimumDistance: 0)
-                        .onChanged { _ in
-                            if isNameValid { isPressingButton = true }
-                        }
-                        .onEnded { _ in
-                            isPressingButton = false
-                        }
-                )
-                .padding(.horizontal, Metrics.fieldHorizontalPadding)
-                .padding(.bottom, Metrics.bottomPadding)
-                .disabled(!isNameValid)
+                // Devam Et Butonu
+                actionButton
+                    .padding(.bottom, 40)
             }
+            .padding(.horizontal, Metrics.horizontalPadding)
+            .opacity(contentOpacity)
+            .offset(y: contentOffset)
         }
         .onAppear {
-            nameFieldFocused = true
-            withAnimation(.linear(duration: 2.2).repeatForever(autoreverses: false)) {
-                shimmerPhase = 1.0
+            withAnimation(.easeOut(duration: 1.0)) {
+                contentOpacity = 1.0
+                contentOffset = 0
             }
-            withAnimation(.easeInOut(duration: 2.6).repeatForever(autoreverses: true)) {
-                bgPulse = 1.0
+            withAnimation(.linear(duration: 20).repeatForever(autoreverses: false)) {
+                bgRotation = 360
+            }
+            nameFieldFocused = true
+        }
+    }
+
+    // MARK: - Background View
+    private var backgroundGradient: some View {
+        ZStack {
+            Color(hex: "0F0F1E") // Koyu premium arka plan
+            
+            // Hareket eden renkli küreler
+            Group {
+                Circle()
+                    .fill(Color.purple.opacity(0.5))
+                    .frame(width: 400)
+                    .blur(radius: 80)
+                    .offset(x: -150, y: -250)
+                
+                Circle()
+                    .fill(Color.blue.opacity(0.4))
+                    .frame(width: 300)
+                    .blur(radius: 70)
+                    .offset(x: 150, y: 200)
+            }
+            .rotationEffect(.degrees(bgRotation))
+        }
+    }
+
+    // MARK: - TextField Section
+    private var textFieldSection: some View {
+        VStack(alignment: .center, spacing: 15) {
+            TextField("", text: $nameInput, prompt: Text("Adın...").foregroundStyle(.white.opacity(0.4)))
+                .font(.system(.title2, design: .rounded, weight: .bold))
+                .foregroundStyle(.white)
+                .multilineTextAlignment(.center)
+                .padding(.vertical, 20)
+                .background(
+                    RoundedRectangle(cornerRadius: Metrics.fieldCornerRadius)
+                        .fill(.white.opacity(0.1))
+                        .background(VisualEffectView(effect: UIBlurEffect(style: .systemThinMaterialDark)))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: Metrics.fieldCornerRadius)
+                        .stroke(.white.opacity(0.2), lineWidth: 1)
+                )
+                .focused($nameFieldFocused)
+                .submitLabel(.done)
+                .onSubmit(saveAndProceed)
+            
+            if !nameInput.isEmpty && !isNameValid {
+                Text("En az 2 karakter gir kanka :)")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                    .transition(.opacity)
             }
         }
     }
-}
-// MARK: - Actions
-private extension OnboardingView {
-    func saveAndProceed() {
-        let trimmed = nameInput.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        withAnimation(.spring()) {
-            userName = trimmed
+
+    // MARK: - Action Button
+    // MARK: - Action Button (Yeni Renk Paleti ve Glow Efekti)
+        private var actionButton: some View {
+            Button(action: saveAndProceed) {
+                ZStack {
+                    // Ana Buton Gövdesi (Canlı Gradyan)
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        .fill(
+                            isNameValid ?
+                            LinearGradient(colors: [Color(hex: "8E2DE2"), Color(hex: "4A00E0")], startPoint: .leading, endPoint: .trailing) :
+                            LinearGradient(colors: [Color.white.opacity(0.1), Color.white.opacity(0.05)], startPoint: .leading, endPoint: .trailing)
+                        )
+                        // Aktifken dışarıya hafif bir mor ışık yayar
+                        .shadow(color: isNameValid ? Color(hex: "8E2DE2").opacity(0.5) : Color.clear, radius: 15, x: 0, y: 8)
+                    
+                    // Butonun içindeki parıltı (Glossy etki)
+                    if isNameValid {
+                        RoundedRectangle(cornerRadius: 24, style: .continuous)
+                            .stroke(LinearGradient(colors: [.white.opacity(0.5), .clear], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1.5)
+                    }
+
+                    Text("Başlayalım")
+                        .font(.system(.headline, design: .rounded, weight: .bold))
+                        .foregroundStyle(isNameValid ? .white : .white.opacity(0.3))
+                    
+                    // Geliştirilmiş Shimmer (Işık Süzmesi)
+                    if isNameValid {
+                        GeometryReader { geo in
+                            Color.white.opacity(0.2)
+                                .mask(
+                                    Rectangle()
+                                        .fill(
+                                            LinearGradient(colors: [.clear, .white.opacity(0.8), .clear], startPoint: .leading, endPoint: .trailing)
+                                        )
+                                        .rotationEffect(.degrees(25))
+                                        .offset(x: shimmerPhase * geo.size.width * 2.5)
+                                )
+                        }
+                        .clipShape(RoundedRectangle(cornerRadius: 24))
+                    }
+                }
+            }
+            .frame(height: Metrics.buttonHeight)
+            .disabled(!isNameValid)
+            // Basıldığında küçülme efekti
+            .scaleEffect(isButtonAnimating ? 0.96 : (isNameValid ? 1.02 : 1.0))
+            .animation(.spring(response: 0.4, dampingFraction: 0.7), value: isNameValid)
+            .onAppear {
+                withAnimation(.linear(duration: 2.5).repeatForever(autoreverses: false)) {
+                    shimmerPhase = 1.0
+                }
+            }
+        }
+
+    private func saveAndProceed() {
+        guard isNameValid else { return }
+        UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+        
+        withAnimation(.easeInOut(duration: 0.5)) {
+            userName = nameInput.trimmingCharacters(in: .whitespacesAndNewlines)
             hasSeenOnboarding = true
         }
+    }
+}
+
+// MARK: - Helpers
+struct VisualEffectView: UIViewRepresentable {
+    var effect: UIVisualEffect?
+    func makeUIView(context: Context) -> UIVisualEffectView { UIVisualEffectView() }
+    func updateUIView(_ uiView: UIVisualEffectView, context: Context) { uiView.effect = effect }
+}
+
+extension Color {
+    init(hex: String) {
+        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        var int: UInt64 = 0
+        Scanner(string: hex).scanHexInt64(&int)
+        let a, r, g, b: UInt64
+        switch hex.count {
+        case 3: (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
+        case 6: (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
+        case 8: (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
+        default: (a, r, g, b) = (1, 1, 1, 0)
+        }
+        self.init(.sRGB, red: Double(r) / 255, green: Double(g) / 255, blue: Double(b) / 255, opacity: Double(a) / 255)
     }
 }
 
