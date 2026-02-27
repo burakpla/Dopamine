@@ -31,7 +31,7 @@ class HabitRowViewModel {
             
             if habit.isCompleted {
                 habit.completedAt = Date()
-                confettiTrigger += 1 // Konfeti patlat!
+                confettiTrigger += 1
                 generator.impactOccurred()
             } else {
                 habit.completedAt = nil
@@ -39,6 +39,17 @@ class HabitRowViewModel {
         }
         
         
+    }
+}
+// MARK: Delete and Duplicate
+extension HabitRowViewModel {
+    func deleteHabit(modelContext: ModelContext) {
+        modelContext.delete(habit)
+    }
+    
+    func duplicateHabit(modelContext: ModelContext) {
+        let newHabit = Habit(title: "\(habit.title) (Kopya)", difficulty: habit.difficulty)
+        modelContext.insert(newHabit)
     }
 }
 
