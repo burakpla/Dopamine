@@ -40,7 +40,7 @@
 
 ## 🎬 Demo Video
 
-> 📹 Demo videosu yakında eklenecektir.
+> 📹 [Demo videosunu izlemek için tıklayın](Screenshots/demo.mov)
 
 ---
 
