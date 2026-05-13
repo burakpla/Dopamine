@@ -40,7 +40,7 @@
 
 ## 🎬 Demo Video
 
-> 📹 [Demo videosunu izlemek için tıklayın](Screenshots/demo.mov)
+> 📹 Demo videosu yakında eklenecektir.
 
 ---
 
@@ -105,7 +105,7 @@ Dopamine/
 
 1. Bu repoyu klonlayın:
    ```bash
-   git clone https://github.com/nicklaus4/Dopamine.git
+   git clone https://github.com/burakpla/Dopamine.git
    ```
 2. Xcode 16+ ile `Dopamine.xcodeproj` dosyasını açın
 3. iPhone 17 Pro veya üzeri simülatör seçin
