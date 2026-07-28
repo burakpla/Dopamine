@@ -12,7 +12,7 @@ struct DopamineApp: App {
             SplashScreenView()
                 .preferredColorScheme(.dark)
         }
-        .modelContainer(for: Habit.self)
+        .modelContainer(for: [Habit.self, HabitLog.self])
     }
 }
 
@@ -76,17 +76,17 @@ struct SplashScreenView: View {
     private var splashContent: some View {
         ZStack {
             // === BACKGROUND ===
-            Color(hex: "0A0A16").ignoresSafeArea()
+            DS.Colors.canvas.ignoresSafeArea()
             
             // Rotating angular gradient
             AngularGradient(
                 colors: [
-                    Color(hex: "0F0F1E"),
-                    Color(hex: "1A0A2E").opacity(0.8),
-                    Color(hex: "0D1B2A"),
-                    Color(hex: "0F0F1E"),
-                    Color(hex: "1A0535").opacity(0.6),
-                    Color(hex: "0F0F1E")
+                    DS.Colors.background,
+                    DS.Colors.primary.opacity(0.22),
+                    DS.Colors.secondary.opacity(0.16),
+                    DS.Colors.background,
+                    DS.Colors.primary.opacity(0.14),
+                    DS.Colors.background
                 ],
                 center: .center,
                 angle: .degrees(gradientAngle)
@@ -97,7 +97,7 @@ struct SplashScreenView: View {
             // Morphing orbs
             Ellipse()
                 .fill(
-                    RadialGradient(colors: [.purple.opacity(0.25), .clear], center: .center, startRadius: 10, endRadius: 180)
+                    RadialGradient(colors: [DS.Colors.primary.opacity(0.28), .clear], center: .center, startRadius: 10, endRadius: 180)
                 )
                 .frame(width: 360, height: 300)
                 .scaleEffect(orbScale1)
@@ -106,7 +106,7 @@ struct SplashScreenView: View {
             
             Ellipse()
                 .fill(
-                    RadialGradient(colors: [.orange.opacity(0.2), .pink.opacity(0.1), .clear], center: .center, startRadius: 10, endRadius: 160)
+                    RadialGradient(colors: [DS.Colors.secondary.opacity(0.22), DS.Colors.success.opacity(0.10), .clear], center: .center, startRadius: 10, endRadius: 160)
                 )
                 .frame(width: 300, height: 350)
                 .scaleEffect(orbScale2)
@@ -130,7 +130,7 @@ struct SplashScreenView: View {
                     Circle()
                         .stroke(
                             AngularGradient(
-                                colors: [.orange.opacity(0.5), .pink.opacity(0.3), .purple.opacity(0.5), .orange.opacity(0.5)],
+                                colors: [DS.Colors.primary.opacity(0.6), DS.Colors.secondary.opacity(0.4), DS.Colors.success.opacity(0.45), DS.Colors.primary.opacity(0.6)],
                                 center: .center
                             ),
                             lineWidth: 2
@@ -143,7 +143,7 @@ struct SplashScreenView: View {
                     // Mid ring
                     Circle()
                         .stroke(
-                            LinearGradient(colors: [.pink.opacity(0.4), .purple.opacity(0.2)], startPoint: .top, endPoint: .bottom),
+                            LinearGradient(colors: [DS.Colors.secondary.opacity(0.4), DS.Colors.primary.opacity(0.2)], startPoint: .top, endPoint: .bottom),
                             lineWidth: 1.2
                         )
                         .frame(width: 170, height: 170)
@@ -166,7 +166,7 @@ struct SplashScreenView: View {
                     Circle()
                         .fill(
                             RadialGradient(
-                                colors: [.orange.opacity(0.35), .pink.opacity(0.15), .clear],
+                                colors: [DS.Colors.primary.opacity(0.38), DS.Colors.secondary.opacity(0.15), .clear],
                                 center: .center,
                                 startRadius: 15,
                                 endRadius: 110
@@ -184,8 +184,8 @@ struct SplashScreenView: View {
                         .scaleEffect(logoScale)
                         .opacity(logoOpacity)
                         .offset(y: logoY)
-                        .shadow(color: .orange.opacity(0.4), radius: 25, x: 0, y: 8)
-                        .shadow(color: .pink.opacity(0.2), radius: 40, x: 0, y: 15)
+                        .shadow(color: DS.Colors.primary.opacity(0.45), radius: 25, x: 0, y: 8)
+                        .shadow(color: DS.Colors.secondary.opacity(0.2), radius: 40, x: 0, y: 15)
                 }
                 
                 // Title area
@@ -197,7 +197,7 @@ struct SplashScreenView: View {
                             .tracking(14)
                             .foregroundStyle(
                                 LinearGradient(
-                                    colors: [.orange, .pink, .purple],
+                                    colors: [DS.Colors.secondary, DS.Colors.primary, Color(hex: "FF6B9E")],
                                     startPoint: .leading,
                                     endPoint: .trailing
                                 )
@@ -231,16 +231,16 @@ struct SplashScreenView: View {
                     // Subtitle with line accents
                     HStack(spacing: 12) {
                         Rectangle()
-                            .fill(LinearGradient(colors: [.clear, .orange.opacity(0.4)], startPoint: .leading, endPoint: .trailing))
+                            .fill(LinearGradient(colors: [.clear, DS.Colors.primary.opacity(0.5)], startPoint: .leading, endPoint: .trailing))
                             .frame(width: 30, height: 1)
                         
                         Text("Harekete Geç")
                             .font(.system(size: 13, weight: .semibold, design: .rounded))
-                            .foregroundStyle(.white.opacity(0.45))
+                            .foregroundStyle(DS.Colors.textSecondary)
                             .tracking(5)
                         
                         Rectangle()
-                            .fill(LinearGradient(colors: [.orange.opacity(0.4), .clear], startPoint: .leading, endPoint: .trailing))
+                            .fill(LinearGradient(colors: [DS.Colors.primary.opacity(0.5), .clear], startPoint: .leading, endPoint: .trailing))
                             .frame(width: 30, height: 1)
                     }
                     .opacity(subtitleOpacity)
@@ -347,13 +347,12 @@ private extension SplashScreenView {
     }
     
     func spawnSparks() {
-        let colors: [Color] = [.orange, .pink, .purple, .cyan, .yellow, .white]
-        let w = UIScreen.main.bounds.width / 2
-        let h = UIScreen.main.bounds.height / 2
+        let colors: [Color] = DS.Colors.festive + [.white]
+        let maxRadius: CGFloat = 420
         
         for i in 0..<30 {
             let angle = Double.random(in: 0...(2 * .pi))
-            let radius = CGFloat.random(in: 80...max(w, h))
+            let radius = CGFloat.random(in: 80...maxRadius)
             let spark = Spark(
                 id: i,
                 x: cos(angle) * radius,
@@ -389,23 +388,12 @@ private struct Spark: Identifiable {
 // MARK: - Notifications
 private enum NotificationHelper {
     static func requestNotificationPermissionAndScheduleDaily() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { success, _ in
-            guard success else { return }
-            scheduleDailyReminder()
+        guard UserDefaults.standard.object(forKey: "remindersEnabled") as? Bool ?? true else { return }
+        let hour = UserDefaults.standard.object(forKey: "reminderHour") as? Int ?? 20
+
+        NotificationManager.requestPermission { granted in
+            guard granted else { return }
+            NotificationManager.scheduleDailyReminder(atHour: hour)
         }
-    }
-    
-    private static func scheduleDailyReminder() {
-        let content = UNMutableNotificationContent()
-        content.title = "DOPAMINE ⚡️"
-        content.body = "Günü bitirmeden son bir kontrol yapalım mı? Halkan ne durumda? 🌈"
-        content.sound = .default
-        
-        var dateComponents = DateComponents()
-        dateComponents.hour = 20
-        
-        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
-        let request = UNNotificationRequest(identifier: "dailyReminder", content: content, trigger: trigger)
-        UNUserNotificationCenter.current().add(request)
     }
 }

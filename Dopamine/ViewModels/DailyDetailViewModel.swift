@@ -15,32 +15,35 @@ import SwiftData
 class DailyDetailViewModel {
     // MARK: Properties
     var date: Date
-    var habits: [Habit]
-    
+    var logs: [HabitLog]
+
     // MARK: Initializer
-    init(date: Date, habits: [Habit]) {
+    init(date: Date, logs: [HabitLog]) {
         self.date = date
-        self.habits = habits
+        self.logs = logs
     }
-    
+
     // MARK: Computed
-    var completedHabits: [Habit] {
+    var dayLogs: [HabitLog] {
         let calendar = Calendar.current
-        return habits.filter { habit in
-            guard let completedAt = habit.completedAt else { return false }
-            return calendar.isDate(completedAt, inSameDayAs: date)
+        return logs
+            .filter { calendar.isDate($0.date, inSameDayAs: date) }
+            .sorted { $0.points > $1.points }
+    }
+
+    var dailyTotalPoints: Int {
+        dayLogs.reduce(0) { $0 + $1.points }
+    }
+
+    var isToday: Bool { Calendar.current.isDateInToday(date) }
+
+    var dailySummary: String {
+        let count = dayLogs.count
+        switch count {
+        case 0: return isToday ? "Henüz başlamadın, hadi bakalım! 🚀" : "O gün biraz dinlenmişsin kanka. 😴"
+        case 1...2: return "Güzel bir başlangıç yapmıştın! ⚡️"
+        case 3...5: return "O gün tam bir canavardın! 🔥"
+        default: return "Efsanevi bir gün! Bu tempoyu koru. 👑"
         }
     }
-    
-    var dailyTotalPoints: Int {
-        completedHabits.reduce(0) { $0 + $1.points }
-    }
-    
-    var dailySummary: String {
-        let count = completedHabits.count
-        if count == 0 { return "O gün biraz dinlenmişsin kanka. 😴" }
-        if count < 3 { return "Güzel bir başlangıç yapmıştın! ⚡️" }
-        return "O gün tam bir canavardın! 🔥"
-    }
 }
-

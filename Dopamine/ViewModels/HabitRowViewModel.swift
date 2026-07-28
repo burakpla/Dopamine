@@ -15,41 +15,63 @@ import SwiftData
 class HabitRowViewModel {
     // MARK: Properties
     var habit: Habit
-    
+    /// Satırın temsil ettiği gün (varsayılan: bugün).
+    var referenceDate: Date
+
     // MARK: Initializer
-    init(habit: Habit) {
+    init(habit: Habit, referenceDate: Date = .now) {
         self.habit = habit
+        self.referenceDate = referenceDate
     }
-    
+
+    // MARK: Computed
+    var isCompleted: Bool { habit.isCompleted(on: referenceDate) }
+    var currentStreak: Int { habit.currentStreak }
+
     // MARK: Actions
-    func toggleCompletion(confettiTrigger: inout Int) {
-        let generator = UIImpactFeedbackGenerator(style: .medium)
-        generator.prepare()
-        
+    /// Tamamlama durumunu değiştirir; log ekler veya siler.
+    /// - Returns: Yeni tamamlanma durumu.
+    @discardableResult
+    func toggleCompletion(modelContext: ModelContext, confettiTrigger: inout Int) -> Bool {
+        let willComplete = !isCompleted
+
         withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-            habit.isCompleted.toggle()
-            
-            if habit.isCompleted {
-                habit.completedAt = Date()
+            if willComplete {
+                let log = HabitLog(
+                    date: referenceDate,
+                    points: habit.points,
+                    habitTitle: habit.title,
+                    habit: habit
+                )
+                modelContext.insert(log)
                 confettiTrigger += 1
-                generator.impactOccurred()
-            } else {
-                habit.completedAt = nil
+                HapticManager.success()
+            } else if let existing = habit.log(on: referenceDate) {
+                modelContext.delete(existing)
+                HapticManager.light()
             }
         }
-        
-        
-    }
-}
-// MARK: Delete and Duplicate
-extension HabitRowViewModel {
-    func deleteHabit(modelContext: ModelContext) {
-        modelContext.delete(habit)
-    }
-    
-    func duplicateHabit(modelContext: ModelContext) {
-        let newHabit = Habit(title: "\(habit.title) (Kopya)", difficulty: habit.difficulty)
-        modelContext.insert(newHabit)
+
+        try? modelContext.save()
+        return willComplete
     }
 }
 
+// MARK: Delete and Duplicate
+extension HabitRowViewModel {
+    func deleteHabit(modelContext: ModelContext) {
+        HapticManager.warning()
+        modelContext.delete(habit)
+        try? modelContext.save()
+    }
+
+    func duplicateHabit(modelContext: ModelContext) {
+        let newHabit = Habit(
+            title: "\(habit.title) (Kopya)",
+            difficulty: habit.difficulty,
+            sortOrder: habit.sortOrder + 1
+        )
+        modelContext.insert(newHabit)
+        try? modelContext.save()
+    }
+}

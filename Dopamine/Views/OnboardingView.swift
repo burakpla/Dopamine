@@ -74,10 +74,10 @@ struct OnboardingView: View {
                         .stroke(
                             AngularGradient(
                                 colors: [
-                                    Color(hex: "8E2DE2"),
-                                    Color(hex: "4A00E0"),
-                                    Color(hex: "00D2FF"),
-                                    Color(hex: "8E2DE2")
+                                    DS.Colors.primary,
+                                    DS.Colors.secondary,
+                                    DS.Colors.success,
+                                    DS.Colors.primary
                                 ],
                                 center: .center
                             ),
@@ -85,7 +85,7 @@ struct OnboardingView: View {
                         )
                         .frame(width: Metrics.ringSize, height: Metrics.ringSize)
                         .rotationEffect(.degrees(-90))
-                        .shadow(color: Color(hex: "8E2DE2").opacity(0.45), radius: 12, x: 0, y: 6)
+                        .shadow(color: DS.Colors.primary.opacity(0.45), radius: 12, x: 0, y: 6)
 
                     // Optional sparkle arc (shows when completed)
                     Circle()
@@ -154,24 +154,25 @@ struct OnboardingView: View {
 
     // MARK: Subviews - Background
     private var backgroundGradient: some View {
-        ZStack {
-            Color(hex: "0F0F1E")
+        DS.Colors.background
+            .overlay {
+                Group {
+                    Circle()
+                        .fill(DS.Colors.primary.opacity(0.40))
+                        .frame(width: 400, height: 400)
+                        .blur(radius: 80)
+                        .offset(x: -150, y: -250)
 
-            Group {
-                Circle()
-                    .fill(Color.purple.opacity(0.5))
-                    .frame(width: 400)
-                    .blur(radius: 80)
-                    .offset(x: -150, y: -250)
-
-                Circle()
-                    .fill(Color.blue.opacity(0.4))
-                    .frame(width: 300)
-                    .blur(radius: 70)
-                    .offset(x: 150, y: 200)
+                    Circle()
+                        .fill(DS.Colors.secondary.opacity(0.28))
+                        .frame(width: 300, height: 300)
+                        .blur(radius: 70)
+                        .offset(x: 150, y: 200)
+                }
+                .rotationEffect(.degrees(bgRotation))
             }
-            .rotationEffect(.degrees(bgRotation))
-        }
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
     }
 
     // MARK: Subviews - Text Field
@@ -198,7 +199,7 @@ struct OnboardingView: View {
             if !nameInput.isEmpty && !isNameValid {
                 Text("En az 2 karakter gir kanka :)")
                     .font(.caption)
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(DS.Colors.streak)
                     .transition(.opacity)
             }
         }
@@ -212,7 +213,7 @@ struct OnboardingView: View {
                     .fill(
                         isNameValid ?
                         LinearGradient(
-                            colors: [Color(hex: "8E2DE2"), Color(hex: "4A00E0")],
+                            colors: [DS.Colors.primary, DS.Colors.secondary],
                             startPoint: .leading,
                             endPoint: .trailing
                         ) :
@@ -223,7 +224,7 @@ struct OnboardingView: View {
                         )
                     )
                     .shadow(
-                        color: isNameValid ? Color(hex: "8E2DE2").opacity(0.5) : Color.clear,
+                        color: isNameValid ? DS.Colors.primary.opacity(0.5) : Color.clear,
                         radius: 15,
                         x: 0,
                         y: 8

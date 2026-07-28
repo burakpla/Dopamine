@@ -12,45 +12,54 @@ import SwiftUI
 struct ProgressCircle: View {
     var progress: Double
     var color: Color
-    
+    var lineWidth: CGFloat = DS.Size.ringLineWidth
+
     var body: some View {
         ZStack {
             Circle()
-                .stroke(Color.white.opacity(0.1), lineWidth: 6)
-            
+                .stroke(Color.white.opacity(0.10), lineWidth: lineWidth)
+
             Circle()
-                .trim(from: 0, to: progress)
+                .trim(from: 0, to: min(max(progress, 0), 1))
                 .stroke(
-                    color.gradient,
-                    style: StrokeStyle(lineWidth: 6, lineCap: .round)
+                    AngularGradient(
+                        colors: [color.opacity(0.65), color, color.opacity(0.9)],
+                        center: .center
+                    ),
+                    style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
                 )
                 .rotationEffect(.degrees(-90))
-                .shadow(color: color.opacity(0.3), radius: 5, x: 0, y: 0)
-                .animation(.spring(response: 0.6, dampingFraction: 0.8), value: progress)
+                .shadow(color: color.opacity(0.35), radius: 6)
+                .animation(DS.Motion.softSpring, value: progress)
         }
     }
 }
 
 // MARK: Confetti
 struct ConfettiView: View {
+    private static let pieceCount = 26
+
     @State private var animate = false
-    @State private var xOffsets: [CGFloat] = (0..<25).map { _ in CGFloat.random(in: -150...150) }
-    @State private var yOffsets: [CGFloat] = (0..<25).map { _ in CGFloat.random(in: -300...300) }
-    
+    @State private var xOffsets: [CGFloat] = (0..<pieceCount).map { _ in CGFloat.random(in: -150...150) }
+    @State private var yOffsets: [CGFloat] = (0..<pieceCount).map { _ in CGFloat.random(in: -300...300) }
+    @State private var colors: [Color] = (0..<pieceCount).map { _ in DS.Colors.festive.randomElement()! }
+    @State private var sizes: [CGFloat] = (0..<pieceCount).map { _ in CGFloat.random(in: 6...11) }
+
     var body: some View {
         ZStack {
-            ForEach(0..<25) { i in
-                Circle()
-                    .fill([Color.orange, .blue, .purple, .green, .yellow, .pink, .cyan].randomElement()!)
-                    .frame(width: CGFloat.random(in: 6...10), height: CGFloat.random(in: 6...10))
+            ForEach(0..<Self.pieceCount, id: \.self) { i in
+                Capsule()
+                    .fill(colors[i])
+                    .frame(width: sizes[i], height: sizes[i] * 1.6)
+                    .rotationEffect(.degrees(animate ? 220 : 0))
                     .offset(x: animate ? xOffsets[i] : 0,
                             y: animate ? yOffsets[i] : 0)
                     .opacity(animate ? 0 : 1)
-                    .scaleEffect(animate ? 0.2 : 1.2)
+                    .scaleEffect(animate ? 0.2 : 1.1)
             }
         }
         .onAppear {
-            withAnimation(.easeOut(duration: 1.5)) {
+            withAnimation(.easeOut(duration: 1.4)) {
                 animate = true
             }
         }
@@ -77,7 +86,7 @@ struct VisualEffectView: UIViewRepresentable {
             .frame(width: 100, height: 100)
     }
     .padding()
-    .background(Color(hex: "0F0F1E"))
+    .background(DS.Colors.background)
     .preferredColorScheme(.dark)
 }
 
@@ -85,8 +94,8 @@ struct VisualEffectView: UIViewRepresentable {
 struct ScalableButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .scaleEffect(configuration.isPressed ? 0.94 : 1.0)
-            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: configuration.isPressed)
+            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
+            .animation(DS.Motion.press, value: configuration.isPressed)
             .opacity(configuration.isPressed ? 0.9 : 1.0)
     }
 }
