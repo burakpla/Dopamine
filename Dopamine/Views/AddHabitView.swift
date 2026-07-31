@@ -16,40 +16,16 @@ struct AddHabitView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @State private var vm = AddHabitViewModel()
-    @FocusState private var isTitleFocused: Bool
-
-    /// Görünüm ömrü boyunca sabit kalan placeholder.
-    @State private var placeholder: String = ""
 
     // MARK: Computed
     /// Zorluk seviyesi renkleri — tasarım sistemi paletiyle uyumlu.
     static func difficultyColor(for level: Int) -> Color {
-        switch level {
-        case 1: return DS.Colors.success
-        case 2: return DS.Colors.streak
-        default: return DS.Colors.danger
-        }
+        HabitDifficulty.from(rawValue: level).color
     }
 
-    private var currentDifficultyColor: Color {
-        Self.difficultyColor(for: vm.selectedDifficulty)
-    }
+    private var activeDifficulty: HabitDifficulty { vm.resolvedDifficulty }
 
-    private var difficultySymbol: String {
-        switch vm.selectedDifficulty {
-        case 1: return "leaf.fill"
-        case 2: return "bolt.fill"
-        default: return "flame.fill"
-        }
-    }
-
-    private var rewardPoints: Int {
-        switch vm.selectedDifficulty {
-        case 1: return 5
-        case 2: return 15
-        default: return 40
-        }
-    }
+    private var currentDifficultyColor: Color { activeDifficulty.color }
 
     // MARK: Body
     var body: some View {
@@ -59,15 +35,15 @@ struct AddHabitView: View {
 
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: DS.Spacing.lg) {
-                        inputSection
-                        suggestionsSection
-                        difficultySelectionSection
-                        rewardInfoCard
-                        saveButton
+                        headerSection
+                        levelPickerSection
+                        catalogSection
                     }
                     .padding(.horizontal, DS.Spacing.screenEdge)
-                    .padding(.vertical, DS.Spacing.lg)
+                    .padding(.top, DS.Spacing.lg)
+                    .padding(.bottom, DS.Spacing.xxl)
                 }
+                .safeAreaInset(edge: .bottom) { bottomBar }
             }
             .navigationTitle("Yeni Hedef")
             .navigationBarTitleDisplayMode(.inline)
@@ -76,10 +52,6 @@ struct AddHabitView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Vazgeç") { dismiss() }.foregroundStyle(.white.opacity(0.7))
                 }
-            }
-            .onAppear {
-                placeholder = vm.placeholders.randomElement() ?? "Bugün neyi başaracaksın?"
-                isTitleFocused = true
             }
         }
     }
@@ -99,127 +71,226 @@ private extension AddHabitView {
                     .offset(x: 100, y: -200)
             }
             .ignoresSafeArea()
-            .animation(.easeInOut(duration: 0.35), value: vm.selectedDifficulty)
+            .animation(.easeInOut(duration: 0.35), value: activeDifficulty)
             .allowsHitTesting(false)
             .accessibilityHidden(true)
     }
 
-    // MARK: Section - Input
-    var inputSection: some View {
+    // MARK: Section - Header
+    /// Serbest metin girişi yoktur; kullanıcı yalnızca hazır listeden seçer.
+    var headerSection: some View {
         VStack(alignment: .leading, spacing: DS.Spacing.sm) {
             Text("NE BAŞARACAKSIN?")
                 .overlineStyle()
 
-            TextField(
-                "",
-                text: $vm.title,
-                prompt: Text(placeholder).foregroundStyle(DS.Colors.textTertiary)
-            )
-            .focused($isTitleFocused)
-            .submitLabel(.done)
-            .onSubmit(save)
+            HStack(spacing: DS.Spacing.sm) {
+                Image(systemName: vm.selectedTemplate?.symbol ?? "square.grid.2x2")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(vm.hasSelection ? currentDifficultyColor : DS.Colors.textTertiary)
+                    .frame(width: DS.Size.iconMd)
+
+                Text(vm.selectedTemplate?.title ?? "Aşağıdaki listeden bir hedef seç")
+                    .font(.subheadline.weight(vm.hasSelection ? .semibold : .regular))
+                    .foregroundStyle(vm.hasSelection ? DS.Colors.textPrimary : DS.Colors.textTertiary)
+                    .lineLimit(2)
+
+                Spacer(minLength: DS.Spacing.xs)
+
+                if vm.hasSelection {
+                    difficultyBadge
+                        .transition(.scale.combined(with: .opacity))
+                }
+            }
             .padding()
+            .frame(minHeight: 56)
             .background(DS.Colors.glass, in: RoundedRectangle(cornerRadius: DS.Radius.sm, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: DS.Radius.sm, style: .continuous)
-                    .strokeBorder(vm.errorMessage == nil ? DS.Colors.hairline : DS.Colors.danger.opacity(0.6), lineWidth: 1)
+                    .strokeBorder(
+                        vm.errorMessage == nil
+                            ? (vm.hasSelection ? currentDifficultyColor.opacity(0.45) : DS.Colors.hairline)
+                            : DS.Colors.danger.opacity(0.6),
+                        lineWidth: 1
+                    )
             )
-            .foregroundStyle(DS.Colors.textPrimary)
+            .animation(DS.Motion.press, value: vm.selectedTemplate)
 
             if let error = vm.errorMessage {
                 Text(error)
                     .font(.caption2)
                     .foregroundStyle(DS.Colors.danger)
                     .transition(.opacity)
+            } else {
+                Text("Zorluk ve puanı biz belirliyoruz — sen sadece hedefi seç.")
+                    .font(.caption2)
+                    .foregroundStyle(DS.Colors.textTertiary)
             }
         }
     }
 
-    // MARK: Section - Suggestions
-    var suggestionsSection: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: DS.Spacing.xs) {
-                ForEach(vm.suggestions, id: \.title) { suggestion in
-                    Button {
-                        withAnimation(DS.Motion.press) {
-                            vm.apply(suggestion: suggestion)
-                        }
-                    } label: {
-                        Text(suggestion.title)
-                            .font(.caption.bold())
-                            .foregroundStyle(DS.Colors.textPrimary.opacity(0.85))
-                            .padding(.horizontal, DS.Spacing.sm)
-                            .padding(.vertical, DS.Spacing.xs)
-                            .background(DS.Colors.glassStrong, in: Capsule())
-                    }
-                    .buttonStyle(ScalableButtonStyle())
-                }
-            }
+    /// Seçilen hedefin zorluğunu gösteren, salt okunur rozet.
+    var difficultyBadge: some View {
+        HStack(spacing: 4) {
+            Image(systemName: activeDifficulty.symbol)
+                .font(.system(size: 10, weight: .bold))
+            Text(activeDifficulty.title.uppercased())
+                .font(DS.Typo.badge)
         }
-        .scrollClipDisabled()
-        .accessibilityLabel("Hazır öneriler")
+        .foregroundStyle(currentDifficultyColor)
+        .padding(.horizontal, DS.Spacing.xs)
+        .padding(.vertical, 5)
+        .background(currentDifficultyColor.opacity(0.16), in: Capsule())
+        .accessibilityLabel("Zorluk: \(activeDifficulty.title)")
     }
 
-    // MARK: Section - Difficulty
-    var difficultySelectionSection: some View {
+    // MARK: Section - Level Picker
+    /// Kullanıcı zorluk *atamaz*, yalnızca hangi listeye bakacağını seçer.
+    var levelPickerSection: some View {
         VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-            Text("ZORLUK SEVİYESİ")
+            Text("HAZIR LİSTELER")
                 .overlineStyle()
 
-            HStack(spacing: DS.Spacing.sm) {
-                ForEach(1...3, id: \.self) { index in
-                    difficultyButton(for: index)
+            HStack(spacing: DS.Spacing.xs) {
+                ForEach(HabitDifficulty.allCases) { level in
+                    levelTab(for: level)
                 }
             }
+
+            Text(vm.browsingLevel.caption)
+                .font(.caption2)
+                .foregroundStyle(DS.Colors.textTertiary)
+                .transition(.opacity)
         }
     }
 
-    func difficultyButton(for index: Int) -> some View {
-        let isSelected = vm.selectedDifficulty == index
-        let color = Self.difficultyColor(for: index)
-        let label = index == 1 ? "Kolay" : (index == 2 ? "Orta" : "Zor")
-        let symbol = index == 1 ? "leaf.fill" : (index == 2 ? "bolt.fill" : "flame.fill")
+    func levelTab(for level: HabitDifficulty) -> some View {
+        let isActive = vm.browsingLevel == level
 
         return Button {
-            withAnimation(DS.Motion.press) {
-                vm.selectedDifficulty = index
-                HapticManager.light()
-            }
+            withAnimation(DS.Motion.press) { vm.changeLevel(to: level) }
         } label: {
-            VStack(spacing: DS.Spacing.xs) {
-                Image(systemName: symbol)
-                Text(label).font(.caption.bold())
+            VStack(spacing: DS.Spacing.xxs) {
+                HStack(spacing: 5) {
+                    Image(systemName: level.symbol)
+                        .font(.system(size: 12, weight: .bold))
+                    Text(level.title)
+                        .font(.caption.bold())
+                }
+                Text("+\(level.points) puan")
+                    .font(DS.Typo.tileLabel)
+                    .opacity(0.8)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, DS.Spacing.md)
+            .padding(.vertical, DS.Spacing.sm)
             .background(
-                isSelected ? color.opacity(0.18) : DS.Colors.glass,
+                isActive ? level.color.opacity(0.18) : DS.Colors.glass,
                 in: RoundedRectangle(cornerRadius: DS.Radius.sm, style: .continuous)
             )
-            .foregroundStyle(isSelected ? color : DS.Colors.textTertiary)
+            .foregroundStyle(isActive ? level.color : DS.Colors.textTertiary)
             .overlay(
                 RoundedRectangle(cornerRadius: DS.Radius.sm, style: .continuous)
-                    .strokeBorder(isSelected ? color.opacity(0.55) : DS.Colors.hairline, lineWidth: isSelected ? 1.5 : 1)
+                    .strokeBorder(isActive ? level.color.opacity(0.55) : DS.Colors.hairline, lineWidth: isActive ? 1.5 : 1)
             )
         }
         .buttonStyle(ScalableButtonStyle())
-        .accessibilityLabel("\(label) zorluk")
+        .accessibilityLabel("\(level.title) liste")
+        .accessibilityAddTraits(isActive ? [.isSelected, .isButton] : .isButton)
+    }
+
+    // MARK: Section - Catalog
+    var catalogSection: some View {
+        VStack(alignment: .leading, spacing: DS.Spacing.md) {
+            ForEach(vm.visibleGroups, id: \.category.id) { group in
+                VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+                    HStack(spacing: 6) {
+                        Image(systemName: group.category.symbol)
+                            .font(.system(size: 10, weight: .bold))
+                        Text(group.category.rawValue.uppercased())
+                    }
+                    .overlineStyle()
+
+                    ForEach(group.items) { template in
+                        templateRow(template)
+                    }
+                }
+            }
+        }
+        .animation(DS.Motion.press, value: vm.browsingLevel)
+    }
+
+    func templateRow(_ template: HabitTemplate) -> some View {
+        let isSelected = vm.isSelected(template)
+        let color = template.difficulty.color
+
+        return Button {
+            withAnimation(DS.Motion.press) { vm.select(template) }
+        } label: {
+            HStack(spacing: DS.Spacing.sm) {
+                Image(systemName: template.symbol)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(color)
+                    .frame(width: DS.Size.iconMd)
+
+                Text(template.title)
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(DS.Colors.textPrimary)
+                    .multilineTextAlignment(.leading)
+
+                Spacer(minLength: DS.Spacing.xs)
+
+                Text("+\(template.points)")
+                    .font(DS.Typo.badge)
+                    .foregroundStyle(color)
+                    .padding(.horizontal, DS.Spacing.xs)
+                    .padding(.vertical, 4)
+                    .background(color.opacity(0.14), in: Capsule())
+
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 16))
+                    .foregroundStyle(isSelected ? color : DS.Colors.textTertiary.opacity(0.6))
+            }
+            .padding(.horizontal, DS.Spacing.sm)
+            .padding(.vertical, DS.Spacing.sm)
+            .background(
+                isSelected ? color.opacity(0.14) : DS.Colors.glass,
+                in: RoundedRectangle(cornerRadius: DS.Radius.sm, style: .continuous)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: DS.Radius.sm, style: .continuous)
+                    .strokeBorder(isSelected ? color.opacity(0.5) : DS.Colors.hairline, lineWidth: 1)
+            )
+        }
+        .buttonStyle(ScalableButtonStyle())
+        .accessibilityLabel("\(template.title), \(template.difficulty.title), \(template.points) puan")
         .accessibilityAddTraits(isSelected ? [.isSelected, .isButton] : .isButton)
+    }
+
+    // MARK: Bottom Bar
+    /// Ödül bilgisi + kaydet butonu her zaman erişilebilir olsun diye alta sabitlenir.
+    var bottomBar: some View {
+        VStack(spacing: DS.Spacing.sm) {
+            rewardInfoCard
+            saveButton
+        }
+        .padding(.horizontal, DS.Spacing.screenEdge)
+        .padding(.top, DS.Spacing.sm)
+        .padding(.bottom, DS.Spacing.sm)
+        .background(.ultraThinMaterial)
     }
 
     // MARK: Card - Reward
     var rewardInfoCard: some View {
         HStack(spacing: DS.Spacing.sm) {
-            Image(systemName: difficultySymbol)
+            Image(systemName: activeDifficulty.symbol)
                 .foregroundStyle(currentDifficultyColor)
                 .font(.title3)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("Tamamladığında")
+                Text(vm.hasSelection ? "\(activeDifficulty.title) • Tamamladığında" : "Bir hedef seç")
                     .font(.caption)
                     .foregroundStyle(DS.Colors.textSecondary)
 
-                Text("+\(rewardPoints) Puan")
+                Text("+\(vm.rewardPoints) Puan")
                     .font(.subheadline.bold())
                     .foregroundStyle(DS.Colors.textPrimary)
                     .contentTransition(.numericText())
@@ -227,7 +298,7 @@ private extension AddHabitView {
 
             Spacer(minLength: 0)
         }
-        .glassCard(radius: DS.Radius.md, padding: DS.Spacing.md, tint: currentDifficultyColor)
+        .glassCard(radius: DS.Radius.md, padding: DS.Spacing.sm, tint: currentDifficultyColor)
         .accessibilityElement(children: .combine)
     }
 

@@ -14,52 +14,79 @@ import SwiftData
 @Observable
 class AddHabitViewModel {
     // MARK: Properties
-    var title: String = ""
-    var selectedDifficulty: Int = 1
+    /// Katalogda gösterilen seviye sekmesi.
+    var browsingLevel: HabitDifficulty = .easy
+
+    /// Kullanıcının katalogdan seçtiği hazır aktivite. Tek veri girişi budur.
+    private(set) var selectedTemplate: HabitTemplate?
+
     var errorMessage: String?
 
-    // MARK: Constants
-    let placeholders = [
-        "Bugün neyi başaracaksın?",
-        "Yeni bir alışkanlık, yeni bir sen.",
-        "Kitap oku, su iç, spor yap...",
-        "Küçük bir adım, büyük bir fark."
-    ]
-
-    /// Hızlı ekleme önerileri.
-    let suggestions: [(title: String, difficulty: Int)] = [
-        ("Su İç 💧", 1),
-        ("10 Dk Yürüyüş 🚶", 1),
-        ("Kitap Oku 📖", 2),
-        ("Spor Yap 🏋️", 3),
-        ("Meditasyon 🧘", 2),
-        ("Erken Uyu 😴", 2)
-    ]
-
     // MARK: Computed
-    var trimmedTitle: String {
-        title.trimmingCharacters(in: .whitespacesAndNewlines)
+    /// Kaydedilecek başlık — yalnızca katalogdan gelir.
+    var title: String { selectedTemplate?.title ?? "" }
+
+    var isValid: Bool { selectedTemplate != nil }
+
+    /// Zorluk kullanıcı tarafından seçilmez; katalog belirler.
+    var resolvedDifficulty: HabitDifficulty {
+        selectedTemplate?.difficulty ?? browsingLevel
     }
 
-    var isValid: Bool { !trimmedTitle.isEmpty && trimmedTitle.count <= 60 }
+    var rewardPoints: Int { resolvedDifficulty.points }
+
+    /// Seçim yapıldıysa zorluk rozeti gösterilir.
+    var hasSelection: Bool { selectedTemplate != nil }
+
+    /// Ekranda gösterilecek gruplar.
+    var visibleGroups: [(category: HabitCategory, items: [HabitTemplate])] {
+        HabitCatalog.grouped(for: browsingLevel)
+    }
 
     // MARK: Actions
-    func apply(suggestion: (title: String, difficulty: Int)) {
-        title = suggestion.title
-        selectedDifficulty = suggestion.difficulty
+    func select(_ template: HabitTemplate) {
+        // Aynı karta tekrar dokunmak seçimi kaldırır.
+        if selectedTemplate?.id == template.id {
+            selectedTemplate = nil
+        } else {
+            selectedTemplate = template
+        }
+        errorMessage = nil
+        HapticManager.light()
+    }
+
+    func isSelected(_ template: HabitTemplate) -> Bool {
+        selectedTemplate?.id == template.id
+    }
+
+    func changeLevel(to level: HabitDifficulty) {
+        guard browsingLevel != level else { return }
+        browsingLevel = level
         HapticManager.light()
     }
 
     @discardableResult
     func saveHabit(modelContext: ModelContext) -> Bool {
-        guard isValid else {
-            errorMessage = trimmedTitle.isEmpty ? "Bir başlık gir." : "Başlık en fazla 60 karakter olabilir."
+        guard let template = selectedTemplate else {
+            errorMessage = "Listeden bir hedef seç."
+            HapticManager.error()
+            return false
+        }
+
+        // Aynı hedefin ikinci kez eklenmesini engelle.
+        let existingTitles = (try? modelContext.fetch(FetchDescriptor<Habit>()))?.map(\.title) ?? []
+        guard !existingTitles.contains(template.title) else {
+            errorMessage = "Bu hedef zaten listende."
             HapticManager.error()
             return false
         }
 
         let nextOrder = (try? modelContext.fetchCount(FetchDescriptor<Habit>())) ?? 0
-        let newHabit = Habit(title: trimmedTitle, difficulty: selectedDifficulty, sortOrder: nextOrder)
+        let newHabit = Habit(
+            title: template.title,
+            difficulty: template.difficulty.rawValue,
+            sortOrder: nextOrder
+        )
         modelContext.insert(newHabit)
 
         do {
