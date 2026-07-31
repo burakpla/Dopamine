@@ -10,7 +10,8 @@
 
 ## ✨ Özellikler
 
-- 🎯 **Alışkanlık Oluşturma** — Kolay, Orta ve Zor zorluk seviyelerinde alışkanlıklar ekle (hazır önerilerle hızlı başlangıç)
+- 🎯 **Hazır Alışkanlık Kataloğu** — Kolay / Orta / Zor listelerinden, kategorilere ayrılmış 50+ hazır aktiviteden seç
+- ⚖️ **Otomatik Zorluk** — Zorluk ve puan kullanıcıya bırakılmaz; her aktivitenin seviyesi katalogda tanımlıdır
 - 🔥 **Seri (Streak) Takibi** — Hem alışkanlık bazlı hem genel kesintisiz gün serisi
 - 🏅 **Rozet Sistemi** — 11 farklı başarım, ilerleme çubuklarıyla birlikte
 - 📊 **Haftalık / Aylık Grafik** — Charts ile hedef çizgisi gösterimli performans grafiği
@@ -82,12 +83,29 @@ Dopamine/
 │   ├── HabitRow.swift           # Alışkanlık satırı
 │   └── OnboardingView.swift     # Karşılama ekranı
 └── Helpers/
+    ├── HabitCatalog.swift       # Hazır aktivite kataloğu, zorluk & kategori
+    ├── Theme.swift              # Tasarım sistemi (renk, boşluk, tipografi)
     ├── HapticManager.swift      # Dokunsal geri bildirim
     ├── NotificationManager.swift # Bildirim yönetimi
     ├── DataMigrator.swift       # v1 → v2 veri taşıma
     ├── QuoteProvider.swift      # Motivasyon sözleri
     └── SharedComponents.swift   # Ortak UI bileşenleri
 ```
+
+---
+
+## 🗂️ Alışkanlık Kataloğu
+
+Kullanıcı serbest metin yazmaz; hedefini **hazır listeden seçer**. Böylece
+zorluk ve puanlama her kullanıcıda tutarlı kalır.
+
+| Seviye | Puan | Örnek Aktiviteler |
+|---|---|---|
+| 🟢 **Kolay** | +5 | Yatağını topla, 1 bardak su iç, 5 dakika esne, vitaminini al, bitkileri sula, sevdiğine mesaj at |
+| 🟡 **Orta** | +15 | 20 sayfa kitap oku, 10 dakika meditasyon, 8.000 adım at, ev yemeği pişir, aileni ara, soğuk duş al |
+| 🔴 **Zor** | +40 | 1 saat antrenman, 5 km koş, 100 şınav çek, sabah 06:00'da kalk, dijital detoks, 2 saat derin çalışma |
+
+Aktiviteler 6 kategoriye ayrılır: **Sağlık · Zihin · Üretkenlik · Yaşam · Bağlantı · Disiplin**.
 
 ---
 
@@ -98,6 +116,8 @@ Dopamine/
 | 🟢 Kolay | +5 |
 | 🟡 Orta | +15 |
 | 🔴 Zor | +40 |
+
+> Zorluk seviyesi katalogda önceden tanımlıdır; kullanıcı değiştiremez.
 
 Seviye eşiği eğriseldir: bir seviyeyi tamamlamak için `100 × seviye^1.35` puan gerekir.
 Toplam **30 seviye** ve **12 rütbe** bulunur.
