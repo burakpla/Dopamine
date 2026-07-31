@@ -29,16 +29,17 @@
 
 ## 📸 Ekran Görüntüleri
 
-<p align="center">
-  <img src="Screenshots/onboarding.png" width="200" />
-  <img src="Screenshots/dashboard.png" width="200" />
-  <img src="Screenshots/add_habit.png" width="200" />
-</p>
-<p align="center">
-  <img src="Screenshots/daily_detail.png" width="200" />
-  <img src="Screenshots/habit_list.png" width="200" />
-  <img src="Screenshots/level_system.png" width="200" />
-</p>
+| Ana Ekran | Günün Hedefleri | Rozetler |
+|:--:|:--:|:--:|
+| <img src="Screenshots/dashboard.png" width="220" /> | <img src="Screenshots/habit_list.png" width="220" /> | <img src="Screenshots/achievements.png" width="220" /> |
+
+| Hedef Ekle — Kolay | Hedef Ekle — Zor | Takvim |
+|:--:|:--:|:--:|
+| <img src="Screenshots/add_habit_easy.png" width="220" /> | <img src="Screenshots/add_habit_hard.png" width="220" /> | <img src="Screenshots/calendar.png" width="220" /> |
+
+| Günlük Detay | Ayarlar |
+|:--:|:--:|
+| <img src="Screenshots/daily_detail.png" width="220" /> | <img src="Screenshots/settings.png" width="220" /> |
 
 ---
 
